@@ -100,6 +100,75 @@ p { margin: 0 0 1em 0; }
   color: var(--text-muted);
 }
 
+/* Notification bell (student role) */
+.notif-bell { position: relative; }
+.notif-bell summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.notif-bell summary::-webkit-details-marker { display: none; }
+.notif-bell summary:hover { background: var(--bg); color: var(--text); }
+.notif-bell[open] summary { background: var(--bg); color: var(--text); }
+.notif-count {
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12);
+  z-index: 50;
+}
+.notif-list { list-style: none; margin: 0; padding: 0; }
+.notif-list li {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+.notif-list li:last-child { border-bottom: none; }
+.notif-list li.unread { background: var(--accent-tint); }
+.notif-list li .faint { margin-top: 3px; font-size: 0.72rem; }
+.notif-mark-read {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  border: none;
+  border-top: 1px solid var(--border);
+  background: none;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.notif-mark-read:hover { background: var(--bg); }
+
 .streak-badge {
   font-family: var(--font-mono);
   font-size: 0.78rem;
