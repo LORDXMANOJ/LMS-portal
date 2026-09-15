@@ -21,11 +21,12 @@ const {
 const router = express.Router();
 router.use(requireRole('student'));
 
-// Available as `streak` / `notifUnreadCount` in every student view (nav bar
-// badge, dashboard tile, notification bell).
+// Available as `streak` / `notifUnreadCount` / `notifRecent` in every
+// student view (nav bar badge + dropdown, dashboard tile).
 router.use((req, res, next) => {
   res.locals.streak = getStreak(req.session.user.id);
   res.locals.notifUnreadCount = unreadCount(req.session.user.id);
+  res.locals.notifRecent = recentNotifications(req.session.user.id, 8);
   next();
 });
 
