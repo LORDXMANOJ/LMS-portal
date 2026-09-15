@@ -4,6 +4,33 @@
     <% if (user) { %>
       <!-- Role-specific navigation lives in the left sidebar (views/partials/sidebar.ejs) -->
       <div class="nav-user">
+        <% if (user.role === 'student' && typeof notifRecent !== 'undefined') { %>
+          <details class="notif-bell">
+            <summary>
+              Notifications
+              <% if (notifUnreadCount > 0) { %><span class="notif-count"><%= notifUnreadCount %></span><% } %>
+            </summary>
+            <div class="notif-dropdown">
+              <% if (notifRecent.length === 0) { %>
+                <p class="faint" style="padding:14px;margin:0;">Nothing yet — activity from your classmates will show up here.</p>
+              <% } else { %>
+                <ul class="notif-list">
+                  <% notifRecent.forEach(n => { %>
+                    <li class="<%= n.read_at ? '' : 'unread' %>">
+                      <%= n.message %>
+                      <div class="faint"><%= n.created_at %></div>
+                    </li>
+                  <% }) %>
+                </ul>
+                <% if (notifUnreadCount > 0) { %>
+                  <form method="POST" action="/student/notifications/read-all">
+                    <button type="submit" class="notif-mark-read">Mark all as read</button>
+                  </form>
+                <% } %>
+              <% } %>
+            </div>
+          </details>
+        <% } %>
         <% if (user.role === 'student' && typeof streak !== 'undefined' && streak.current > 0) { %>
           <a href="/student/daily" class="streak-badge <%= streak.answeredToday ? 'streak-done' : 'streak-pending' %>" title="<%= streak.answeredToday ? 'Answered today' : 'Answer today\'s question to keep this going' %>">
             <%= streak.current %> day<%= streak.current === 1 ? '' : 's' %>
