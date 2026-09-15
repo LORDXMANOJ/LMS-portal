@@ -67,4 +67,35 @@ function getStreak(studentId) {
   return { current, longest, answeredToday, alive };
 }
 
-module.exports = { getStreak };
+// Same ranking rule as the leaderboard page: streak first, then total daily
+// questions answered in the course, then name. Returns { studentId: rank }
+// (rank 1 = first place), used both to render the leaderboard and to detect
+// when one student's answer just moved them ahead of another.
+function getLeaderboardRanks(courseId) {
+  const classmates = db
+    .prepare(
+      `SELECT u.id, u.name FROM enrollments e JOIN users u ON u.id = e.student_id
+       WHERE e.course_id = ? AND u.status = 'active' ORDER BY u.name`
+    )
+    .all(courseId);
+
+  const answeredCount = db.prepare(
+    `SELECT COUNT(*) as c FROM daily_answers da
+     JOIN daily_questions dq ON dq.id = da.daily_question_id
+     WHERE dq.course_id = ? AND da.student_id = ?`
+  );
+
+  const rows = classmates.map((s) => {
+    const streak = getStreak(s.id);
+    const answered = answeredCount.get(courseId, s.id).c;
+    return { id: s.id, name: s.name, streak: streak.current, answered };
+  });
+
+  rows.sort((a, b) => b.streak - a.streak || b.answered - a.answered || a.name.localeCompare(b.name));
+
+  const ranks = {};
+  rows.forEach((r, i) => { ranks[r.id] = i + 1; });
+  return { ranks, rows };
+}
+
+module.exports = { getStreak, getLeaderboardRanks };

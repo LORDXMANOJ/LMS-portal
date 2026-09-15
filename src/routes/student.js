@@ -6,15 +6,26 @@ const db = require('../db');
 const { requireRole } = require('../middleware/auth');
 const { logActivity } = require('../db/activity');
 const { gradeMcq } = require('../db/grading');
-const { getStreak } = require('../db/streaks');
+const { getStreak, getLeaderboardRanks } = require('../db/streaks');
 const { groupByWeek } = require('../utils/weeks');
+const {
+  notifyDailyAnswered,
+  notifyStreakMilestone,
+  notifyAssignmentSubmitted,
+  notifyLeaderboardOvertakes,
+  unreadCount,
+  recentNotifications,
+  markAllRead,
+} = require('../db/notifications');
 
 const router = express.Router();
 router.use(requireRole('student'));
 
-// Available as `streak` in every student view (nav bar badge, dashboard tile).
+// Available as `streak` / `notifUnreadCount` in every student view (nav bar
+// badge, dashboard tile, notification bell).
 router.use((req, res, next) => {
   res.locals.streak = getStreak(req.session.user.id);
+  res.locals.notifUnreadCount = unreadCount(req.session.user.id);
   next();
 });
 
@@ -198,27 +209,8 @@ router.get('/courses/:id/leaderboard', (req, res) => {
 
   const course = db.prepare('SELECT * FROM courses WHERE id = ?').get(courseId);
 
-  const classmates = db
-    .prepare(
-      `SELECT u.id, u.name FROM enrollments e JOIN users u ON u.id = e.student_id
-       WHERE e.course_id = ? AND u.status = 'active' ORDER BY u.name`
-    )
-    .all(courseId);
-
-  const answeredCount = db.prepare(
-    `SELECT COUNT(*) as c FROM daily_answers da
-     JOIN daily_questions dq ON dq.id = da.daily_question_id
-     WHERE dq.course_id = ? AND da.student_id = ?`
-  );
-
-  const rows = classmates.map((s) => {
-    const streak = getStreak(s.id);
-    const answered = answeredCount.get(courseId, s.id).c;
-    return { id: s.id, name: s.name, streak: streak.current, answered, isMe: s.id === studentId };
-  });
-
-  rows.sort((a, b) => b.streak - a.streak || b.answered - a.answered || a.name.localeCompare(b.name));
-  rows.forEach((r, i) => { r.rank = i + 1; });
+  const { ranks, rows: rawRows } = getLeaderboardRanks(courseId);
+  const rows = rawRows.map((r) => ({ ...r, rank: ranks[r.id], isMe: r.id === Number(studentId) }));
 
   res.render('student/leaderboard', { title: 'Leaderboard: ' + course.code, course, rows });
 });
@@ -322,6 +314,7 @@ router.post('/assignments/:id/answer', (req, res) => {
   let submission = db
     .prepare('SELECT * FROM submissions WHERE assignment_id = ? AND student_id = ?')
     .get(assignmentId, studentId);
+  const isFirstSubmission = !submission;
 
   if (submission) {
     db.prepare(
@@ -388,6 +381,13 @@ router.post('/assignments/:id/answer', (req, res) => {
   }
 
   logActivity(studentId, assignment.course_id, 'submitted', `Submitted ${assignment.title}`);
+
+  if (isFirstSubmission) {
+    const actor = db.prepare('SELECT name FROM users WHERE id = ?').get(studentId);
+    const course = db.prepare('SELECT code FROM courses WHERE id = ?').get(assignment.course_id);
+    notifyAssignmentSubmitted(assignment.course_id, studentId, actor.name, assignment.title, course.code);
+  }
+
   res.redirect('/student/assignments/' + assignmentId);
 });
 
@@ -427,6 +427,10 @@ router.post('/assignments/:id/submit', upload.single('file'), (req, res) => {
        VALUES (?, ?, ?, ?, ?)`
     ).run(assignmentId, studentId, content || null, filePath, isLate ? 'late' : 'submitted');
     logActivity(studentId, assignment.course_id, 'submitted', `Submitted ${assignment.title}`);
+
+    const actor = db.prepare('SELECT name FROM users WHERE id = ?').get(studentId);
+    const course = db.prepare('SELECT code FROM courses WHERE id = ?').get(assignment.course_id);
+    notifyAssignmentSubmitted(assignment.course_id, studentId, actor.name, assignment.title, course.code);
   }
 
   res.redirect('/student/assignments/' + assignmentId);
@@ -554,6 +558,11 @@ router.post('/daily/:id/answer', (req, res) => {
     return res.status(403).render('error', { title: 'Not available yet', message: 'This question has not been released yet.' });
   }
 
+  const isFirstAnswer = !db
+    .prepare('SELECT 1 FROM daily_answers WHERE daily_question_id = ? AND student_id = ?')
+    .get(question.id, studentId);
+  const ranksBefore = isFirstAnswer ? getLeaderboardRanks(question.course_id).ranks : null;
+
   const tx = db.transaction(() => {
     if (question.type === 'mcq') {
       const options = db.prepare('SELECT id, is_correct FROM daily_question_options WHERE daily_question_id = ?').all(question.id);
@@ -586,6 +595,23 @@ router.post('/daily/:id/answer', (req, res) => {
   tx();
 
   logActivity(studentId, question.course_id, 'daily_answered', `Answered a daily question`);
+
+  // Only fire peer notifications on a student's first answer to this
+  // question, not on every resubmission/edit.
+  if (isFirstAnswer) {
+    const actor = db.prepare('SELECT name FROM users WHERE id = ?').get(studentId);
+    const course = db.prepare('SELECT code FROM courses WHERE id = ?').get(question.course_id);
+    notifyDailyAnswered(question.course_id, studentId, actor.name, course.code);
+
+    const newStreak = getStreak(studentId);
+    if (newStreak.current > 0 && newStreak.current % 5 === 0) {
+      notifyStreakMilestone(studentId, actor.name, newStreak.current);
+    }
+
+    const ranksAfter = getLeaderboardRanks(question.course_id).ranks;
+    notifyLeaderboardOvertakes(question.course_id, studentId, actor.name, course.code, ranksBefore, ranksAfter);
+  }
+
   const i = req.body.index !== undefined ? '?i=' + encodeURIComponent(req.body.index) : '';
   res.redirect('/student/daily' + i);
 });
@@ -612,6 +638,13 @@ router.get('/profile', (req, res) => {
     .all(studentId);
 
   res.render('student/profile', { title: 'Profile', me, courses });
+});
+
+// Mark every unread notification as read. Redirects back to wherever the
+// student was (the bell dropdown and the dashboard feed both post here).
+router.post('/notifications/read-all', (req, res) => {
+  markAllRead(req.session.user.id);
+  res.redirect(req.get('Referer') || '/student');
 });
 
 module.exports = router;

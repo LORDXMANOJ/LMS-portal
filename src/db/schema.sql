@@ -207,6 +207,21 @@ CREATE TABLE IF NOT EXISTS activity_log (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Peer-activity notifications: real events only (a classmate submitted
+-- something, hit a streak milestone, or overtook you on a leaderboard).
+-- message is pre-rendered text chosen from a rotating set of honestly
+-- worded phrasings for the same real event - nothing here is fabricated.
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE,
+  read_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_student ON notifications(student_id, created_at);
+
 CREATE INDEX IF NOT EXISTS idx_users_department ON users(department_id);
 CREATE INDEX IF NOT EXISTS idx_daily_questions_course ON daily_questions(course_id);
 CREATE INDEX IF NOT EXISTS idx_daily_answers_question ON daily_answers(daily_question_id);

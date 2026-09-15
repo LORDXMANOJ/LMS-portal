@@ -1,33 +1,47 @@
 <%- include('../partials/head') %>
-<main>
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <h1 class="auth-title">Coursework</h1>
-      <p class="auth-sub">Log in to access your courses.</p>
+<main class="login-split">
+  <div class="login-brand">
+    <div class="login-brand-top">
+      <span class="login-logo">Coursework</span>
+      <span class="login-logo-tag">Learning Management</span>
+    </div>
+
+    <div class="login-brand-mid">
+      <p class="login-kicker">Enrollment to outcome</p>
+      <h1 class="login-headline">Every course.<br>Every student.<br>One clear<br>picture.</h1>
+      <p class="login-sub">Connect course content, assignments and progress. Follow every student from their first enrollment to their final grade.</p>
+    </div>
+
+    <div class="login-brand-bottom">
+      <span>01 / COURSES</span>
+      <span>02 / ASSIGNMENTS</span>
+      <span>03 / PROGRESS</span>
+    </div>
+  </div>
+
+  <div class="login-form-panel">
+    <div class="login-form-wrap">
+      <p class="login-form-kicker">Your workspace</p>
+      <h2 class="login-form-title">Welcome back</h2>
+      <p class="login-form-sub">Sign in with the account provided by your institution.</p>
 
       <% if (error) { %>
         <div class="error-msg"><%= error %></div>
       <% } %>
 
-      <form method="POST" action="/login">
+      <form method="POST" action="/login" class="login-form">
         <div class="field">
-          <label for="email">Email</label>
+          <label for="email">Email address</label>
           <input type="email" id="email" name="email" required autofocus>
         </div>
         <div class="field">
           <label for="password">Password</label>
           <input type="password" id="password" name="password" required>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Log in</button>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Sign in</button>
       </form>
 
-      <div class="demo-creds">
-        Demo accounts (hackathon prototype):<br>
-        Admin &mdash; admin@lms.edu / admin123<br>
-        Department head &mdash; hcs@lms.edu / hod123<br>
-        Faculty &mdash; schen@lms.edu / faculty123<br>
-        Student &mdash; aisha@lms.edu / student123
-      </div>
+      <p class="login-help">Forgot your password or need access? Contact your department head or administrator.</p>
     </div>
   </div>
 </main>
