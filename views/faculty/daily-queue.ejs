@@ -1,0 +1,69 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/faculty/courses/<%= course.id %>" class="faint">&larr; <%= course.code %></a>
+    <h1>Daily questions: <%= course.code %></h1>
+    <p class="muted">Each question becomes visible to enrolled students once its scheduled date arrives. Any faculty in your department can edit these, including ones already released.</p>
+
+    <% if (notAnsweredToday.length > 0) { %>
+      <div class="card" style="background:var(--warn-bg);border-color:var(--warn-text);">
+        <strong><%= notAnsweredToday.length %> student<%= notAnsweredToday.length === 1 ? '' : 's' %> haven't answered today's question yet</strong>
+        <p class="faint" style="margin:6px 0 0 0;"><%= notAnsweredToday.map(s => s.name).join(', ') %></p>
+      </div>
+    <% } %>
+
+    <div class="section-header">
+      <h2>Queue (<%= questions.length %>)</h2>
+      <div>
+        <a href="/faculty/courses/<%= course.id %>/daily/mcq/new" class="btn btn-primary btn-sm">Add multiple choice</a>
+        <a href="/faculty/courses/<%= course.id %>/daily/program/new" class="btn btn-sm">Add programming</a>
+      </div>
+    </div>
+    <% if (questions.length === 0) { %>
+      <div class="empty-state">No daily questions queued yet.</div>
+    <% } else { %>
+      <% questions.forEach(q => { %>
+        <% const released = q.scheduled_date <= new Date().toISOString().slice(0, 10); %>
+        <div class="card">
+          <div class="card-title-row">
+            <div>
+              <span class="faint"><%= q.scheduled_date %> &middot; <%= q.type === 'mcq' ? 'Multiple choice' : 'Programming' %> &middot; <%= q.points %> pts</span>
+              <% if (released) { %><span class="badge badge-submitted" style="margin-left:6px;">Released</span>
+              <% } else { %><span class="badge badge-pending" style="margin-left:6px;">Scheduled</span><% } %>
+              <p style="margin:6px 0 0 0;"><strong><%= q.question_text %></strong></p>
+            </div>
+            <div>
+              <a href="/faculty/daily/<%= q.id %>/edit" class="faint">Edit</a>
+              &middot;
+              <form method="POST" action="/faculty/daily/<%= q.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this daily question?');">
+                <button type="submit" class="link-btn">Delete</button>
+              </form>
+            </div>
+          </div>
+          <% if (q.type === 'mcq') { %>
+            <ul class="list-plain" style="border-top:none;">
+              <% q.options.forEach(o => { %>
+                <li style="padding:4px 0;border-bottom:none;">
+                  <%= o.option_text %>
+                  <% if (o.is_correct) { %><span class="badge badge-submitted" style="margin-left:6px;">Correct</span><% } %>
+                </li>
+              <% }) %>
+            </ul>
+          <% } else { %>
+            <% if (q.starter_code) { %>
+              <pre style="background:var(--accent-tint);padding:10px;border-radius:var(--radius);font-size:0.82rem;overflow-x:auto;"><%= q.starter_code %></pre>
+            <% } %>
+            <% if (q.testCases.length > 0) { %>
+              <p class="faint" style="margin-top:6px;"><%= q.testCases.length %> test case(s)</p>
+            <% } %>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

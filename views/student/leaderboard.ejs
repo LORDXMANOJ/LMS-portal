@@ -1,0 +1,31 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:640px;">
+    <a href="/student/courses/<%= course.id %>" class="faint">&larr; <%= course.code %></a>
+    <h1>Leaderboard: <%= course.code %></h1>
+    <p class="muted">Ranked by daily-question streak, then by total daily questions answered.</p>
+
+    <% if (rows.length === 0) { %>
+      <div class="empty-state">No students enrolled yet.</div>
+    <% } else { %>
+      <table>
+        <thead><tr><th>Rank</th><th>Student</th><th>Streak</th><th>Answered</th></tr></thead>
+        <tbody>
+          <% rows.forEach(r => { %>
+            <tr style="<%= r.isMe ? 'background:var(--accent-tint);' : '' %>">
+              <td><%= r.rank %></td>
+              <td><%= r.name %><% if (r.isMe) { %> <span class="faint">(you)</span><% } %></td>
+              <td><%= r.streak %> day<%= r.streak === 1 ? '' : 's' %></td>
+              <td><%= r.answered %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

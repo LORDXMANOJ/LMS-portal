@@ -1,0 +1,165 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<% if (!question) { %>
+<main class="page">
+  <div class="container">
+    <h1>Daily questions</h1>
+    <div class="empty-state">No daily questions have been released yet.</div>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>
+<% } else { %>
+
+<div class="assignment-shell">
+  <div class="assignment-header">
+    <a href="/student" class="faint">&larr; Dashboard</a>
+    <div class="card-title-row" style="margin-top:4px;">
+      <div>
+        <h1 style="margin-bottom:0;font-size:1.3rem;">Daily questions</h1>
+        <p class="faint" style="margin:2px 0 0 0;"><%= question.course_code %> &middot; released <%= question.scheduled_date %> &middot; question <%= index + 1 %> of <%= total %></p>
+      </div>
+      <% if (answer) { %>
+        <div style="text-align:right;">
+          <% if (question.type === 'mcq') { %>
+            <span class="badge <%= answer.is_correct ? 'badge-submitted' : 'badge-overdue' %>"><%= answer.is_correct ? 'Correct' : 'Incorrect' %></span>
+            <div class="faint" style="margin-top:4px;"><%= answer.points_awarded %> / <%= question.points %> pts</div>
+          <% } else { %>
+            <span class="badge badge-submitted">Answered</span>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+    <% if (streak.answeredToday) { %>
+      <div class="faint" style="margin-top:8px;">
+        <%= streak.current %> day<%= streak.current === 1 ? '' : 's' %> in a row &mdash; today's done.
+      </div>
+    <% } %>
+  </div>
+
+  <div class="assignment-slides">
+    <div class="question-fullpage">
+      <div class="qp-question">
+        <div class="qp-meta"><%= question.type === 'mcq' ? 'Multiple choice' : 'Programming' %> &middot; <%= question.points %> pts</div>
+        <p class="qp-text"><%= question.question_text %></p>
+        <% if (question.type === 'program' && question.testCases.length > 0) { %>
+          <div class="qp-test-cases">
+            <strong style="font-size:0.85rem;">Example test cases</strong>
+            <% question.testCases.forEach(tc => { %>
+              <div class="qp-test-case">
+                <div><strong>Input:</strong> <%= tc.input %></div>
+                <div><strong>Expected output:</strong> <%= tc.expected_output %></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+      <div class="qp-divider"></div>
+      <div class="qp-answer">
+        <% if (question.type === 'mcq') { %>
+          <form method="POST" action="/student/daily/<%= question.id %>/answer" id="answer-form">
+            <input type="hidden" name="index" value="<%= index %>">
+            <% question.options.forEach(o => { %>
+              <label class="mcq-option">
+                <input type="checkbox" name="selected_option" value="<%= o.id %>" <%= selectedIds.has(o.id) ? 'checked' : '' %>>
+                <span><%= o.option_text %></span>
+              </label>
+            <% }) %>
+            <p class="faint" style="margin:10px 0;">Check every option you believe is correct &mdash; there may be more than one.</p>
+            <button type="submit" class="btn btn-primary"><%= answer ? 'Update answer' : 'Submit answer' %></button>
+          </form>
+        <% } else { %>
+          <form method="POST" action="/student/daily/<%= question.id %>/answer" id="answer-form" style="display:flex;flex-direction:column;height:100%;">
+            <input type="hidden" name="index" value="<%= index %>">
+            <div class="editor-shell" data-language="<%= question.language %>"></div>
+            <textarea name="code_answer" id="daily-code" class="code-fallback"><%= answer && answer.code_answer !== null && answer.code_answer !== undefined ? answer.code_answer : (question.starter_code || '') %></textarea>
+            <button type="submit" class="btn btn-primary" style="margin-top:10px;align-self:flex-start;"><%= answer ? 'Update answer' : 'Submit answer' %></button>
+          </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="floating-nav">
+    <% if (hasPrev) { %><a href="/student/daily?i=<%= index - 1 %>" class="btn">Previous</a><% } %>
+    <% if (hasNext) { %><a href="/student/daily?i=<%= index + 1 %>" class="btn">Next</a><% } %>
+  </div>
+</div>
+</div>
+
+<script>
+  (function () {
+    var divider = document.querySelector('.qp-divider');
+    if (!divider) return;
+    var pane = divider.closest('.question-fullpage');
+    var qPane = pane.querySelector('.qp-question');
+    var dragging = false;
+
+    divider.addEventListener('mousedown', function (e) {
+      dragging = true;
+      divider.classList.add('dragging');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var rect = pane.getBoundingClientRect();
+      var pct = ((e.clientX - rect.left) / rect.width) * 100;
+      pct = Math.max(20, Math.min(75, pct));
+      qPane.style.flex = '0 0 ' + pct + '%';
+    });
+    document.addEventListener('mouseup', function () {
+      if (dragging) {
+        dragging = false;
+        divider.classList.remove('dragging');
+        var cmEl = document.querySelector('.CodeMirror');
+        if (cmEl && cmEl.CodeMirror) cmEl.CodeMirror.refresh();
+      }
+    });
+  })();
+</script>
+
+<% if (question.type === 'program') { %>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script>
+  (function () {
+    var modeMap = { javascript: 'text/javascript', python: 'text/x-python', java: 'text/x-java', cpp: 'text/x-c++src' };
+    var shell = document.querySelector('.editor-shell');
+    if (shell && typeof CodeMirror !== 'undefined') {
+      var textarea = document.getElementById('daily-code');
+      var cm = CodeMirror(shell, {
+        value: textarea.value,
+        mode: modeMap[shell.dataset.language] || 'text/plain',
+        lineNumbers: true,
+        indentUnit: 2,
+        tabSize: 2,
+        indentWithTabs: false,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        smartIndent: true,
+        extraKeys: {
+          Tab: function (editor) {
+            if (editor.somethingSelected()) editor.indentSelection('add');
+            else editor.replaceSelection('  ', 'end');
+          },
+          'Shift-Tab': function (editor) { editor.indentSelection('subtract'); }
+        }
+      });
+      cm.on('change', function () { textarea.value = cm.getValue(); });
+      shell.classList.add('editor-ready');
+      document.getElementById('answer-form').addEventListener('submit', function () {
+        textarea.value = cm.getValue();
+      });
+    }
+  })();
+</script>
+<% } %>
+<%- include('../partials/footer') %>
+<% } %>

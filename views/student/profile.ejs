@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:560px;">
+    <h1>Profile</h1>
+
+    <div class="card">
+      <h2 style="font-size:1rem;">Account</h2>
+      <table>
+        <tbody>
+          <tr><td class="faint">Name</td><td><%= me.name %></td></tr>
+          <tr><td class="faint">Email</td><td><%= me.email %></td></tr>
+          <tr><td class="faint">Department</td><td><%= me.department_name ? me.department_name + ' (' + me.department_code + ')' : 'Unassigned' %></td></tr>
+          <tr><td class="faint">Member since</td><td><%= me.created_at %></td></tr>
+          <tr><td class="faint">Daily streak</td><td><%= streak.current %> day<%= streak.current === 1 ? '' : 's' %><% if (streak.longest > streak.current) { %> <span class="faint">(best <%= streak.longest %>)</span><% } %></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-header"><h2>Enrolled courses (<%= courses.length %>)</h2></div>
+    <% if (courses.length === 0) { %>
+      <div class="empty-state">Not enrolled in any courses yet.</div>
+    <% } else { %>
+      <ul class="list-plain">
+        <% courses.forEach(c => { %>
+          <li>
+            <strong><%= c.code %></strong>: <%= c.title %>
+            <div class="faint"><%= c.faculty_name || 'Unassigned' %> &middot; enrolled <%= c.enrolled_at %></div>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

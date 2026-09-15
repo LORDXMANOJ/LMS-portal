@@ -1,0 +1,20 @@
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="/dashboard" class="brand">Coursework</a>
+    <% if (user) { %>
+      <!-- Role-specific navigation lives in the left sidebar (views/partials/sidebar.ejs) -->
+      <div class="nav-user">
+        <% if (user.role === 'student' && typeof streak !== 'undefined' && streak.current > 0) { %>
+          <a href="/student/daily" class="streak-badge <%= streak.answeredToday ? 'streak-done' : 'streak-pending' %>" title="<%= streak.answeredToday ? 'Answered today' : 'Answer today\'s question to keep this going' %>">
+            <%= streak.current %> day<%= streak.current === 1 ? '' : 's' %>
+          </a>
+        <% } %>
+        <span><%= user.name %></span>
+        <span class="role-tag"><%= user.role %></span>
+        <form method="POST" action="/logout" class="inline-form">
+          <button type="submit" class="link-btn">Log out</button>
+        </form>
+      </div>
+    <% } %>
+  </div>
+</div>

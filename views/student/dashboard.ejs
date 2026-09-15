@@ -1,0 +1,121 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <h1>Your dashboard</h1>
+    <p class="muted">Pending work, recent announcements, and course progress across your enrolled courses.</p>
+
+    <div class="stats-row">
+      <div class="stat-block">
+        <div class="stat-number"><%= streak.current %></div>
+        <div class="stat-label">Day streak<% if (streak.longest > streak.current) { %> &middot; best <%= streak.longest %><% } %></div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number"><%= courses.length %></div>
+        <div class="stat-label">Enrolled courses</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number"><%= pending.length %></div>
+        <div class="stat-label">Pending assignments</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number"><%= submitted.length %></div>
+        <div class="stat-label">Submitted</div>
+      </div>
+    </div>
+
+    <% if (streak.current > 0 && !streak.answeredToday) { %>
+      <div class="card" style="background:var(--warn-bg);border-color:var(--warn-text);margin-bottom:24px;">
+        <strong>Keep your <%= streak.current %>-day streak going</strong> &mdash;
+        you haven't answered today's daily question yet.
+        <a href="/student/daily">Answer it now &rarr;</a>
+      </div>
+    <% } else if (streak.current === 0) { %>
+      <div class="card" style="margin-bottom:24px;">
+        <strong>Start a streak</strong> &mdash; answer today's daily question to get going.
+        <a href="/student/daily">Go to daily questions &rarr;</a>
+      </div>
+    <% } %>
+
+    <div class="section-header">
+      <h2>Pending work</h2>
+      <a href="/student/calendar" class="faint">View calendar &rarr;</a>
+    </div>
+    <% if (pending.length === 0) { %>
+      <div class="empty-state">No pending assignments. You're caught up.</div>
+    <% } else { %>
+      <ul class="list-plain">
+        <% pending.forEach(a => { %>
+          <% const urgency = urgencyClass(a.due_date, false); %>
+          <li>
+            <div class="card-title-row">
+              <div>
+                <a href="/student/assignments/<%= a.id %>"><strong><%= a.title %></strong></a>
+                <div class="due-date <%= urgency %>">
+                  <%= a.course_code %> &middot; due <%= a.due_date %>
+                  <% if (urgency === 'overdue') { %> &middot; overdue<% } else if (urgency === 'due-soon') { %> &middot; due soon<% } %>
+                </div>
+              </div>
+              <% if (urgency === 'overdue') { %>
+                <span class="badge badge-overdue">Overdue</span>
+              <% } else if (urgency === 'due-soon') { %>
+                <span class="badge badge-due-soon">Due soon</span>
+              <% } else { %>
+                <span class="badge badge-pending">Pending</span>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <div class="section-header"><h2>Your courses</h2></div>
+    <div class="grid">
+      <% courseProgress.forEach(c => { %>
+        <a href="/student/courses/<%= c.id %>" class="card" style="display:block;color:inherit;">
+          <h3><%= c.code %></h3>
+          <p class="muted" style="font-size:0.88rem;"><%= c.title %></p>
+          <p class="faint">Taught by <%= c.faculty_name || 'Unassigned' %></p>
+          <div class="progress-track"><div class="progress-fill" style="width:<%= c.percent %>%;"></div></div>
+          <div class="faint" style="margin-top:6px;"><%= c.done %> of <%= c.total %> assignments completed</div>
+        </a>
+      <% }) %>
+    </div>
+
+    <div class="section-header"><h2>Recent announcements</h2></div>
+    <% if (recentAnnouncements.length === 0) { %>
+      <div class="empty-state">No announcements yet.</div>
+    <% } else { %>
+      <ul class="list-plain">
+        <% recentAnnouncements.forEach(a => { %>
+          <li>
+            <div class="faint"><%= a.course_code %> &middot; <%= a.created_at %></div>
+            <strong><%= a.title %></strong>
+            <p style="margin:4px 0 0 0;"><%= a.body %></p>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <div class="section-header"><h2>Recent activity</h2></div>
+    <% if (recentActivity.length === 0) { %>
+      <div class="empty-state">No activity yet.</div>
+    <% } else { %>
+      <div>
+        <% recentActivity.forEach(a => { %>
+          <div class="activity-item">
+            <div class="activity-dot"></div>
+            <div>
+              <%= a.description %>
+              <div class="faint"><%= a.created_at %></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

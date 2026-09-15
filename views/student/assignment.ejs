@@ -1,0 +1,275 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<%
+  const hasQuestions = mcqQuestions.length > 0 || programQuestions.length > 0;
+%>
+<div class="with-sidebar">
+<% if (!hasQuestions) { %>
+<main class="page">
+  <div class="container">
+    <a href="/student/courses/<%= assignment.course_id %>" class="faint">&larr; <%= assignment.course_code %></a>
+    <h1><%= assignment.title %></h1>
+    <p class="faint">Due <%= assignment.due_date %> &middot; <%= assignment.max_points %> points</p>
+    <% if (assignment.description) { %><p><%= assignment.description %></p><% } %>
+
+    <% if (submission) { %>
+      <div class="card" style="background:var(--accent-tint);border-color:var(--border-strong);">
+        <strong>Submitted <%= submission.submitted_at %></strong>
+        <% if (submission.status === 'late') { %> <span class="badge badge-late">Late</span><% } %>
+        <% if (submission.grade !== null && submission.grade !== undefined) { %>
+          <div><strong>Final grade: <%= submission.grade %> / <%= assignment.max_points %></strong></div>
+          <% if (submission.feedback) { %><div class="muted">Feedback: <%= submission.feedback %></div><% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div class="card">
+      <h2>Your submission</h2>
+      <% if (submission) { %>
+        <% if (submission.content) { %><p><%= submission.content %></p><% } %>
+        <% if (submission.file_path) { %><p><a href="<%= submission.file_path %>" target="_blank">View uploaded file</a></p><% } %>
+        <h3 style="margin-top:20px;">Resubmit</h3>
+      <% } %>
+      <form method="POST" action="/student/assignments/<%= assignment.id %>/submit" enctype="multipart/form-data">
+        <div class="field">
+          <label for="content">Written response (optional)</label>
+          <textarea id="content" name="content"><%= submission ? submission.content || '' : '' %></textarea>
+        </div>
+        <div class="field">
+          <label for="file">Attach a file (optional)</label>
+          <input type="file" id="file" name="file">
+        </div>
+        <button type="submit" class="btn btn-primary"><%= submission ? 'Update submission' : 'Submit' %></button>
+      </form>
+    </div>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>
+<% } else { %>
+
+<div class="assignment-shell">
+<div class="assignment-header">
+  <a href="/student/courses/<%= assignment.course_id %>" class="faint">&larr; <%= assignment.course_code %></a>
+  <div class="card-title-row" style="margin-top:4px;">
+    <div>
+      <h1 style="margin-bottom:0;font-size:1.3rem;"><%= assignment.title %></h1>
+      <p class="faint" style="margin:2px 0 0 0;">Due <%= assignment.due_date %> &middot; <%= assignment.max_points %> points</p>
+    </div>
+    <% if (submission) { %>
+      <div style="text-align:right;">
+        <% if (submission.auto_score !== null && submission.auto_score !== undefined) { %>
+          <div class="faint">MCQ auto-score: <%= submission.auto_score %></div>
+        <% } %>
+        <% if (submission.grade !== null && submission.grade !== undefined) { %>
+          <div><strong>Grade: <%= submission.grade %> / <%= assignment.max_points %></strong></div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="tabs" id="section-tabs">
+    <% if (mcqQuestions.length > 0) { %>
+      <a href="#mcq" class="tab tab-link" data-tab="mcq">Multiple choice (<%= mcqQuestions.length %>)</a>
+    <% } %>
+    <% if (programQuestions.length > 0) { %>
+      <a href="#program" class="tab tab-link" data-tab="program">Programming (<%= programQuestions.length %>)</a>
+    <% } %>
+  </div>
+</div>
+
+<form method="POST" action="/student/assignments/<%= assignment.id %>/answer" id="answer-form" class="assignment-slides">
+  <% mcqQuestions.forEach((q, i) => { %>
+    <% const sel = selectedByQuestion[q.id] || new Set(); %>
+    <section class="mcq-slide question-fullpage" data-tab="mcq" data-index="<%= i %>" hidden>
+      <div class="qp-question">
+        <div class="qp-meta">Multiple choice &middot; question <%= i + 1 %> of <%= mcqQuestions.length %> &middot; <%= q.points %> pts</div>
+        <p class="qp-text"><%= q.question_text %></p>
+      </div>
+      <div class="qp-divider"></div>
+      <div class="qp-answer">
+        <% q.options.forEach(o => { %>
+          <label class="mcq-option">
+            <input type="checkbox" name="mcq_<%= q.id %>" value="<%= o.id %>" <%= sel.has(o.id) ? 'checked' : '' %>>
+            <span><%= o.option_text %></span>
+          </label>
+        <% }) %>
+        <p class="faint" style="margin-top:10px;">Check every option you believe is correct &mdash; there may be more than one.</p>
+      </div>
+    </section>
+  <% }) %>
+
+  <% programQuestions.forEach((q, i) => { %>
+    <% const ans = answersByQuestion[q.id]; %>
+    <section class="program-slide question-fullpage" data-tab="program" data-index="<%= i %>" hidden>
+      <div class="qp-question">
+        <div class="qp-meta">Programming &middot; question <%= i + 1 %> of <%= programQuestions.length %> &middot; <%= q.language %> &middot; <%= q.points %> pts</div>
+        <p class="qp-text"><%= q.question_text %></p>
+        <% if (q.testCases.length > 0) { %>
+          <div class="qp-test-cases">
+            <strong style="font-size:0.85rem;">Example test cases</strong>
+            <% q.testCases.forEach(tc => { %>
+              <div class="qp-test-case">
+                <div><strong>Input:</strong> <%= tc.input %></div>
+                <div><strong>Expected output:</strong> <%= tc.expected_output %></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+      <div class="qp-divider"></div>
+      <div class="qp-answer">
+        <div class="editor-shell" data-question-id="<%= q.id %>" data-language="<%= q.language %>"></div>
+        <textarea name="program_<%= q.id %>" id="code-<%= q.id %>" class="code-fallback"><%= ans && ans.code_answer !== null && ans.code_answer !== undefined ? ans.code_answer : (q.starter_code || '') %></textarea>
+      </div>
+    </section>
+  <% }) %>
+
+  <div class="floating-nav">
+    <button type="button" class="btn" id="prev-btn">Previous</button>
+    <button type="button" class="btn" id="next-btn">Next</button>
+    <button type="submit" class="btn btn-primary"><%= submission ? 'Update answers' : 'Submit answers' %></button>
+  </div>
+</form>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script>
+  (function () {
+    var editors = [];
+    var tabOrder = Array.prototype.map.call(document.querySelectorAll('#section-tabs .tab-link'), function (l) { return l.dataset.tab; });
+    var slidesByTab = {};
+    tabOrder.forEach(function (t) {
+      slidesByTab[t] = Array.prototype.slice.call(document.querySelectorAll('.question-fullpage[data-tab="' + t + '"]'));
+    });
+
+    var state = { tab: tabOrder[0], index: 0 };
+
+    function render() {
+      tabOrder.forEach(function (t) {
+        slidesByTab[t].forEach(function (slide, i) {
+          slide.hidden = !(t === state.tab && i === state.index);
+        });
+      });
+      document.querySelectorAll('#section-tabs .tab-link').forEach(function (l) {
+        l.classList.toggle('active', l.dataset.tab === state.tab);
+      });
+      var prevBtn = document.getElementById('prev-btn');
+      var nextBtn = document.getElementById('next-btn');
+      var tabPos = tabOrder.indexOf(state.tab);
+      prevBtn.disabled = tabPos === 0 && state.index === 0;
+      nextBtn.disabled = tabPos === tabOrder.length - 1 && state.index === slidesByTab[state.tab].length - 1;
+
+      // refresh CodeMirror instances that just became visible
+      editors.forEach(function (e) {
+        var slide = e.cm.getWrapperElement().closest('.question-fullpage');
+        if (slide && !slide.hidden) e.cm.refresh();
+      });
+    }
+
+    document.querySelectorAll('#section-tabs .tab-link').forEach(function (l) {
+      l.addEventListener('click', function (e) {
+        e.preventDefault();
+        state.tab = l.dataset.tab;
+        state.index = 0;
+        render();
+      });
+    });
+
+    document.getElementById('next-btn').addEventListener('click', function () {
+      var tabPos = tabOrder.indexOf(state.tab);
+      if (state.index < slidesByTab[state.tab].length - 1) {
+        state.index++;
+      } else if (tabPos < tabOrder.length - 1) {
+        state.tab = tabOrder[tabPos + 1];
+        state.index = 0;
+      }
+      render();
+    });
+
+    document.getElementById('prev-btn').addEventListener('click', function () {
+      var tabPos = tabOrder.indexOf(state.tab);
+      if (state.index > 0) {
+        state.index--;
+      } else if (tabPos > 0) {
+        state.tab = tabOrder[tabPos - 1];
+        state.index = slidesByTab[state.tab].length - 1;
+      }
+      render();
+    });
+
+    // Draggable divider between question pane and answer pane, per slide
+    document.querySelectorAll('.qp-divider').forEach(function (divider) {
+      var pane = divider.closest('.question-fullpage');
+      var qPane = pane.querySelector('.qp-question');
+      var dragging = false;
+
+      divider.addEventListener('mousedown', function (e) {
+        dragging = true;
+        divider.classList.add('dragging');
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        var rect = pane.getBoundingClientRect();
+        var pct = ((e.clientX - rect.left) / rect.width) * 100;
+        pct = Math.max(20, Math.min(75, pct));
+        qPane.style.flex = '0 0 ' + pct + '%';
+      });
+      document.addEventListener('mouseup', function () {
+        if (dragging) {
+          dragging = false;
+          divider.classList.remove('dragging');
+          editors.forEach(function (e) { e.cm.refresh(); });
+        }
+      });
+    });
+
+    // CodeMirror editors
+    var modeMap = { javascript: 'text/javascript', python: 'text/x-python', java: 'text/x-java', cpp: 'text/x-c++src' };
+    document.querySelectorAll('.editor-shell').forEach(function (shell) {
+      if (typeof CodeMirror === 'undefined') return;
+      var qid = shell.dataset.questionId;
+      var textarea = document.getElementById('code-' + qid);
+      var lang = shell.dataset.language || 'javascript';
+
+      var cm = CodeMirror(shell, {
+        value: textarea.value,
+        mode: modeMap[lang] || 'text/plain',
+        lineNumbers: true,
+        indentUnit: 2,
+        tabSize: 2,
+        indentWithTabs: false,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        smartIndent: true,
+        extraKeys: {
+          Tab: function (editor) {
+            if (editor.somethingSelected()) editor.indentSelection('add');
+            else editor.replaceSelection('  ', 'end');
+          },
+          'Shift-Tab': function (editor) { editor.indentSelection('subtract'); }
+        }
+      });
+      cm.on('change', function () { textarea.value = cm.getValue(); });
+      shell.classList.add('editor-ready');
+      editors.push({ cm: cm, textarea: textarea });
+    });
+
+    document.getElementById('answer-form').addEventListener('submit', function () {
+      editors.forEach(function (e) { e.textarea.value = e.cm.getValue(); });
+    });
+
+    render();
+  })();
+</script>
+<%- include('../partials/footer') %>
+<% } %>

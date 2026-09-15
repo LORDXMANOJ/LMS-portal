@@ -1,0 +1,13 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<% if (user) { %><%- include('partials/sidebar') %><% } %>
+<div class="<%= user ? 'with-sidebar' : '' %>">
+<main class="page">
+  <div class="container" style="max-width:560px;">
+    <h1><%= title %></h1>
+    <p class="muted"><%= message %></p>
+    <a href="/dashboard" class="btn">Back to dashboard</a>
+  </div>
+</main>
+</div>
+<%- include('partials/footer') %>

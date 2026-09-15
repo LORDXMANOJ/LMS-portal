@@ -1,0 +1,137 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:640px;">
+    <a href="<%= backTo %>" class="faint">&larr; Back</a>
+    <h1><%= title %></h1>
+    <p class="muted">
+      <% if (kind === 'mcq') { %>
+        Add as many options as you need and check every one that's correct &mdash; true/false is just two options, and checking more than one makes it a multi-select question.
+      <% } else { %>
+        Add any number of example input / expected-output pairs. Students see these as a guide; you still review and grade the submitted code yourself.
+      <% } %>
+    </p>
+
+    <% if (error) { %><div class="error-msg"><%= error %></div><% } %>
+
+    <form method="POST" action="<%= action %>" id="question-form">
+      <div class="field">
+        <label for="question_text">Question</label>
+        <textarea id="question_text" name="question_text" required style="min-height:90px;"><%= question ? question.question_text : '' %></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="points">Points</label>
+          <input type="number" id="points" name="points" value="<%= question ? question.points : 10 %>" min="1">
+        </div>
+        <% if (typeof daily !== 'undefined' && daily) { %>
+          <div class="field">
+            <label for="scheduled_date">Release date</label>
+            <input type="date" id="scheduled_date" name="scheduled_date" value="<%= question ? question.scheduled_date : '' %>" required>
+          </div>
+        <% } %>
+        <% if (kind === 'program') { %>
+          <div class="field">
+            <label for="language">Language</label>
+            <select id="language" name="language">
+              <% ['javascript','python','java','cpp'].forEach(lang => { %>
+                <option value="<%= lang %>" <%= question && question.language === lang ? 'selected' : '' %>><%= lang %></option>
+              <% }) %>
+            </select>
+          </div>
+        <% } %>
+      </div>
+
+      <% if (kind === 'mcq') { %>
+        <div class="field">
+          <label>Options</label>
+          <div id="option-rows">
+            <% const existingOptions = question ? question.options : [{ option_text: '', is_correct: 0 }, { option_text: '', is_correct: 0 }]; %>
+            <% existingOptions.forEach((o, i) => { %>
+              <div class="option-row">
+                <input type="checkbox" name="option_correct" value="<%= i %>" <%= o.is_correct ? 'checked' : '' %> title="Correct answer">
+                <input type="text" name="option_text" value="<%= o.option_text %>" placeholder="Option text" required>
+                <button type="button" class="link-btn remove-option" title="Remove option">Remove</button>
+              </div>
+            <% }) %>
+          </div>
+          <button type="button" class="btn btn-sm" id="add-option" style="margin-top:8px;">Add option</button>
+          <p class="faint" style="margin-top:6px;">Check the box next to every correct option. Two options with one checked makes a true/false question.</p>
+        </div>
+      <% } else { %>
+        <div class="field">
+          <label for="starter_code">Starter code (optional)</label>
+          <textarea id="starter_code" name="starter_code" style="font-family:'SFMono-Regular',Consolas,monospace;min-height:110px;"><%= question ? question.starter_code || '' : '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label>Test cases (optional, shown to students as examples)</label>
+          <div id="test-case-rows">
+            <% const existingCases = question ? question.testCases : []; %>
+            <% existingCases.forEach(tc => { %>
+              <div class="test-case-row">
+                <input type="text" name="test_input" value="<%= tc.input %>" placeholder="Input">
+                <input type="text" name="test_output" value="<%= tc.expected_output %>" placeholder="Expected output">
+                <button type="button" class="link-btn remove-test-case" title="Remove test case">Remove</button>
+              </div>
+            <% }) %>
+          </div>
+          <button type="button" class="btn btn-sm" id="add-test-case" style="margin-top:8px;">Add test case</button>
+        </div>
+      <% } %>
+
+      <button type="submit" class="btn btn-primary" style="margin-top:20px;"><%= mode === 'edit' ? 'Save changes' : 'Create question' %></button>
+    </form>
+  </div>
+</main>
+<script>
+  (function () {
+    var optionRows = document.getElementById('option-rows');
+    if (optionRows) {
+      document.getElementById('add-option').addEventListener('click', function () {
+        var row = document.createElement('div');
+        row.className = 'option-row';
+        var index = optionRows.children.length;
+        row.innerHTML =
+          '<input type="checkbox" name="option_correct" value="' + index + '" title="Correct answer">' +
+          '<input type="text" name="option_text" placeholder="Option text" required>' +
+          '<button type="button" class="link-btn remove-option" title="Remove option">Remove</button>';
+        optionRows.appendChild(row);
+      });
+      optionRows.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-option') && optionRows.children.length > 2) {
+          e.target.closest('.option-row').remove();
+          reindexOptions();
+        }
+      });
+      function reindexOptions() {
+        Array.prototype.forEach.call(optionRows.children, function (row, i) {
+          row.querySelector('input[type=checkbox]').value = i;
+        });
+      }
+    }
+
+    var caseRows = document.getElementById('test-case-rows');
+    if (caseRows) {
+      document.getElementById('add-test-case').addEventListener('click', function () {
+        var row = document.createElement('div');
+        row.className = 'test-case-row';
+        row.innerHTML =
+          '<input type="text" name="test_input" placeholder="Input">' +
+          '<input type="text" name="test_output" placeholder="Expected output">' +
+          '<button type="button" class="link-btn remove-test-case" title="Remove test case">Remove</button>';
+        caseRows.appendChild(row);
+      });
+      caseRows.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-test-case')) {
+          e.target.closest('.test-case-row').remove();
+        }
+      });
+    }
+  })();
+</script>
+</div>
+<%- include('../partials/footer') %>

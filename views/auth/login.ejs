@@ -1,0 +1,35 @@
+<%- include('../partials/head') %>
+<main>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h1 class="auth-title">Coursework</h1>
+      <p class="auth-sub">Log in to access your courses.</p>
+
+      <% if (error) { %>
+        <div class="error-msg"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/login">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autofocus>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Log in</button>
+      </form>
+
+      <div class="demo-creds">
+        Demo accounts (hackathon prototype):<br>
+        Admin &mdash; admin@lms.edu / admin123<br>
+        Department head &mdash; hcs@lms.edu / hod123<br>
+        Faculty &mdash; schen@lms.edu / faculty123<br>
+        Student &mdash; aisha@lms.edu / student123
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

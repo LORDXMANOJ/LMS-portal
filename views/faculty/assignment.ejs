@@ -1,0 +1,152 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/faculty/courses/<%= course.id %>" class="faint">&larr; <%= course.code %></a>
+    <div class="card-title-row">
+      <div>
+        <h1><%= assignment.title %></h1>
+        <p class="faint">Due <%= assignment.due_date %> &middot; <%= assignment.max_points %> points</p>
+      </div>
+      <a href="/faculty/assignments/<%= assignment.id %>/edit" class="btn btn-sm">Edit</a>
+    </div>
+    <p><%= assignment.description %></p>
+
+    <div class="tabs">
+      <a href="#questions" class="tab tab-link" data-tab="questions">Questions</a>
+      <a href="#submissions" class="tab tab-link" data-tab="submissions">Submissions (<%= submissions.length %>)</a>
+    </div>
+
+    <div id="tab-questions" class="tab-panel">
+      <div class="section-header">
+        <h2>Multiple choice (<%= mcqQuestions.length %>)</h2>
+        <a href="/faculty/assignments/<%= assignment.id %>/questions/mcq/new" class="btn btn-primary btn-sm">Add multiple choice question</a>
+      </div>
+      <% mcqQuestions.forEach((q, i) => { %>
+        <div class="card">
+          <div class="card-title-row">
+            <div>
+              <span class="faint">Question <%= i + 1 %> &middot; <%= q.points %> pts</span>
+              <p style="margin:4px 0 8px 0;"><strong><%= q.question_text %></strong></p>
+              <ul class="list-plain" style="border-top:none;">
+                <% q.options.forEach(o => { %>
+                  <li style="padding:4px 0;border-bottom:none;">
+                    <%= o.option_text %>
+                    <% if (o.is_correct) { %><span class="badge badge-submitted" style="margin-left:6px;">Correct</span><% } %>
+                  </li>
+                <% }) %>
+              </ul>
+            </div>
+            <div>
+              <a href="/faculty/questions/<%= q.id %>/edit" class="faint">Edit</a>
+              &middot;
+              <form method="POST" action="/faculty/questions/<%= q.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this question?');">
+                <button type="submit" class="link-btn">Delete</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+      <% if (mcqQuestions.length === 0) { %><p class="faint">No multiple choice questions yet.</p><% } %>
+
+      <div class="section-header">
+        <h2>Programming (<%= programQuestions.length %>)</h2>
+        <a href="/faculty/assignments/<%= assignment.id %>/questions/program/new" class="btn btn-primary btn-sm">Add programming question</a>
+      </div>
+      <% programQuestions.forEach((q, i) => { %>
+        <div class="card">
+          <div class="card-title-row">
+            <div>
+              <span class="faint">Question <%= i + 1 %> &middot; <%= q.language %> &middot; <%= q.points %> pts</span>
+              <p style="margin:4px 0 8px 0;"><strong><%= q.question_text %></strong></p>
+              <% if (q.starter_code) { %>
+                <pre style="background:var(--accent-tint);padding:10px;border-radius:var(--radius);font-size:0.82rem;overflow-x:auto;"><%= q.starter_code %></pre>
+              <% } %>
+              <% if (q.testCases.length > 0) { %>
+                <p class="faint" style="margin-top:6px;"><%= q.testCases.length %> test case(s)</p>
+              <% } %>
+            </div>
+            <div>
+              <a href="/faculty/questions/<%= q.id %>/edit" class="faint">Edit</a>
+              &middot;
+              <form method="POST" action="/faculty/questions/<%= q.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this question?');">
+                <button type="submit" class="link-btn">Delete</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+      <% if (programQuestions.length === 0) { %><p class="faint">No programming questions yet.</p><% } %>
+    </div>
+
+    <div id="tab-submissions" class="tab-panel" hidden>
+      <% if (submissions.length === 0) { %>
+        <div class="empty-state">No submissions yet.</div>
+      <% } else { %>
+        <% submissions.forEach(s => { %>
+          <div class="card">
+            <div class="card-title-row">
+              <div>
+                <strong><%= s.student_name %></strong>
+                <div class="faint"><%= s.student_email %> &middot; submitted <%= s.submitted_at %></div>
+                <% if (s.auto_score !== null && s.auto_score !== undefined) { %>
+                  <div class="faint">Auto-graded MCQ score: <%= s.auto_score %></div>
+                <% } %>
+              </div>
+              <% if (s.status === 'late') { %><span class="badge badge-late">Late</span>
+              <% } else if (s.status === 'graded') { %><span class="badge badge-graded">Graded</span>
+              <% } else { %><span class="badge badge-submitted">Submitted</span><% } %>
+            </div>
+            <% if (s.content) { %><p><%= s.content %></p><% } %>
+            <% if (s.file_path) { %><p><a href="<%= s.file_path %>" target="_blank">View uploaded file</a></p><% } %>
+            <% if (mcqQuestions.length > 0 || programQuestions.length > 0) { %>
+              <p><a href="/faculty/submissions/<%= s.id %>/answers">View question answers &rarr;</a></p>
+            <% } %>
+
+            <form method="POST" action="/faculty/submissions/<%= s.id %>/grade" style="margin-top:12px;">
+              <div class="field-row">
+                <div class="field">
+                  <label for="grade-<%= s.id %>">Grade (out of <%= assignment.max_points %>)</label>
+                  <input type="number" id="grade-<%= s.id %>" name="grade" value="<%= s.grade !== null ? s.grade : '' %>" min="0" max="<%= assignment.max_points %>">
+                </div>
+              </div>
+              <div class="field">
+                <label for="fb-<%= s.id %>">Feedback</label>
+                <textarea id="fb-<%= s.id %>" name="feedback"><%= s.feedback || '' %></textarea>
+              </div>
+              <button type="submit" class="btn btn-sm">Save grade</button>
+            </form>
+          </div>
+        <% }) %>
+      <% } %>
+
+      <% if (notSubmitted.length > 0) { %>
+        <div class="section-header"><h2>Not yet submitted</h2></div>
+        <ul class="list-plain">
+          <% notSubmitted.forEach(s => { %><li><%= s.name %></li><% }) %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</main>
+<script>
+  (function () {
+    var links = document.querySelectorAll('.tab-link');
+    var panels = { questions: document.getElementById('tab-questions'), submissions: document.getElementById('tab-submissions') };
+    function activate(name) {
+      links.forEach(function (l) { l.classList.toggle('active', l.dataset.tab === name); });
+      Object.keys(panels).forEach(function (k) { panels[k].hidden = k !== name; });
+    }
+    links.forEach(function (l) {
+      l.addEventListener('click', function (e) {
+        e.preventDefault();
+        activate(l.dataset.tab);
+      });
+    });
+    activate(location.hash === '#submissions' ? 'submissions' : 'questions');
+  })();
+</script>
+</div>
+<%- include('../partials/footer') %>

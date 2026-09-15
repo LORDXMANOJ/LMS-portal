@@ -1,0 +1,102 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/student" class="faint">&larr; Dashboard</a>
+    <h1><%= course.code %>: <%= course.title %></h1>
+    <p class="muted"><%= course.description %></p>
+    <p class="faint">Taught by <%= course.faculty_name || 'Unassigned' %></p>
+    <a href="/student/courses/<%= course.id %>/leaderboard" class="btn btn-sm">Leaderboard</a>
+
+    <div class="section-header"><h2>Announcements</h2></div>
+    <% if (announcements.length === 0) { %>
+      <div class="empty-state">No announcements yet.</div>
+    <% } else { %>
+      <ul class="list-plain">
+        <% announcements.forEach(a => { %>
+          <li>
+            <div class="faint"><%= a.created_at %></div>
+            <strong><%= a.title %></strong>
+            <p style="margin:4px 0 0 0;"><%= a.body %></p>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <div class="section-header"><h2>Course content</h2></div>
+    <% if (weeks.length === 0) { %>
+      <div class="empty-state">No materials or assignments posted yet.</div>
+    <% } else { %>
+      <% weeks.forEach((w, wi) => { %>
+        <details class="week-block" <%= wi === 0 ? 'open' : '' %>>
+          <summary>
+            <span><%= w.number === 0 ? 'General' : 'Week ' + w.number %></span>
+            <span class="faint" style="font-weight:400;"><%= w.materials.length %> material<%= w.materials.length === 1 ? '' : 's' %> &middot; <%= w.assignments.length %> assignment<%= w.assignments.length === 1 ? '' : 's' %></span>
+          </summary>
+          <div class="week-content">
+            <% w.materials.forEach(m => { %>
+              <div class="material-item">
+                <span class="faint" style="text-transform:uppercase;font-size:0.72rem;"><%= m.type %></span>
+                <strong style="display:block;margin-top:2px;"><%= m.title %></strong>
+                <% if (m.type === 'video') { %>
+                  <% const vid = extractYoutubeId(m.content); %>
+                  <% if (vid) { %>
+                    <div class="video-embed" style="margin-top:8px;max-width:560px;">
+                      <iframe src="<%= youtubeEmbedUrl(vid) %>" title="<%= m.title %>" frameborder="0" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                  <% } %>
+                <% } else if (m.type === 'link') { %>
+                  <p style="margin:4px 0 0 0;"><a href="<%= m.content %>" target="_blank" rel="noopener"><%= m.content %></a></p>
+                <% } else { %>
+                  <% if (m.content) { %><p style="margin:4px 0 0 0;"><%= m.content %></p><% } %>
+                <% } %>
+                <% if (m.file_path) { %>
+                  <p style="margin:4px 0 0 0;"><a href="<%= m.file_path %>" target="_blank">Download file</a></p>
+                <% } %>
+              </div>
+            <% }) %>
+
+            <% if (w.assignments.length > 0) { %>
+              <table style="margin-top:<%= w.materials.length > 0 ? '12px' : '0' %>;">
+                <thead><tr><th>Assignment</th><th>Due</th><th>Status</th><th>Grade</th></tr></thead>
+                <tbody>
+                  <% w.assignments.forEach(a => { %>
+                    <% const urgency = urgencyClass(a.due_date, !!a.submission_id); %>
+                    <tr>
+                      <td><a href="/student/assignments/<%= a.id %>"><%= a.title %></a></td>
+                      <td class="due-date <%= urgency !== 'done' ? urgency : '' %>"><%= a.due_date %></td>
+                      <td>
+                        <% if (a.submission_status === 'graded') { %>
+                          <span class="badge badge-graded">Graded</span>
+                        <% } else if (a.submission_status === 'late') { %>
+                          <span class="badge badge-late">Late</span>
+                        <% } else if (a.submission_status === 'submitted') { %>
+                          <span class="badge badge-submitted">Submitted</span>
+                        <% } else if (urgency === 'overdue') { %>
+                          <span class="badge badge-overdue">Overdue</span>
+                        <% } else if (urgency === 'due-soon') { %>
+                          <span class="badge badge-due-soon">Due soon</span>
+                        <% } else { %>
+                          <span class="badge badge-pending">Pending</span>
+                        <% } %>
+                      </td>
+                      <td><%= a.grade !== null && a.grade !== undefined ? a.grade + ' / ' + a.max_points : '-' %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            <% } %>
+
+            <% if (w.materials.length === 0 && w.assignments.length === 0) { %>
+              <p class="faint">Nothing here yet.</p>
+            <% } %>
+          </div>
+        </details>
+      <% }) %>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

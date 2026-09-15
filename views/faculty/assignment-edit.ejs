@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:520px;">
+    <a href="/faculty/assignments/<%= assignment.id %>" class="faint">&larr; <%= assignment.title %></a>
+    <h1>Edit assignment</h1>
+    <% if (error) { %><div class="error-msg"><%= error %></div><% } %>
+    <form method="POST" action="/faculty/assignments/<%= assignment.id %>/edit">
+      <div class="field">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" value="<%= assignment.title %>" required>
+      </div>
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description"><%= assignment.description || '' %></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="due_date">Due date</label>
+          <input type="date" id="due_date" name="due_date" value="<%= assignment.due_date %>" required>
+        </div>
+        <div class="field">
+          <label for="max_points">Max points</label>
+          <input type="number" id="max_points" name="max_points" value="<%= assignment.max_points %>">
+        </div>
+        <div class="field">
+          <label for="week_number">Week</label>
+          <input type="number" id="week_number" name="week_number" value="<%= assignment.week_number %>" min="0">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Save changes</button>
+    </form>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

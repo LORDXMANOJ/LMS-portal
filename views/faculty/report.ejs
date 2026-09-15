@@ -1,0 +1,54 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/faculty/courses/<%= course.id %>" class="faint">&larr; <%= course.code %></a>
+    <div class="card-title-row">
+      <h1>Report: <%= course.code %></h1>
+      <a href="/faculty/reports/<%= course.id %>/export.csv" class="btn btn-sm">Export CSV</a>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-block">
+        <div class="stat-number"><%= totalStudents %></div>
+        <div class="stat-label">Enrolled students</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number"><%= totalAssignments %></div>
+        <div class="stat-label">Assignments</div>
+      </div>
+    </div>
+
+    <div class="section-header"><h2>Assignment participation</h2></div>
+    <table>
+      <thead><tr><th>Assignment</th><th>Due</th><th>Submitted</th><th>Avg grade</th></tr></thead>
+      <tbody>
+        <% perAssignment.forEach(a => { %>
+          <tr>
+            <td><%= a.title %></td>
+            <td class="faint"><%= a.due_date %></td>
+            <td><%= a.submitted_count %> / <%= totalStudents %></td>
+            <td><%= a.avg_grade !== null && a.avg_grade !== undefined ? Math.round(a.avg_grade * 10) / 10 : '-' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="section-header"><h2>Student completion</h2></div>
+    <table>
+      <thead><tr><th>Student</th><th>Completed</th></tr></thead>
+      <tbody>
+        <% perStudent.forEach(s => { %>
+          <tr>
+            <td><%= s.name %></td>
+            <td><%= s.completed %> / <%= totalAssignments %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

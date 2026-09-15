@@ -1,0 +1,27 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:520px;">
+    <a href="/admin" class="faint">&larr; Admin</a>
+    <h1>New department</h1>
+    <p class="muted">Creates the department and its department head account together.</p>
+    <% if (error) { %><div class="error-msg"><%= error %></div><% } %>
+    <form method="POST" action="/admin/departments">
+      <div class="field-row">
+        <div class="field"><label for="code">Department code</label><input type="text" id="code" name="code" placeholder="CSE" required></div>
+        <div class="field"><label for="name">Department name</label><input type="text" id="name" name="name" placeholder="Computer Science and Engineering" required></div>
+      </div>
+
+      <h3 style="margin-top:20px;">Department head</h3>
+      <div class="field"><label for="hod_name">Full name</label><input type="text" id="hod_name" name="hod_name" required></div>
+      <div class="field"><label for="hod_email">Email</label><input type="email" id="hod_email" name="hod_email" required></div>
+      <div class="field"><label for="hod_password">Temporary password</label><input type="password" id="hod_password" name="hod_password" required></div>
+
+      <button type="submit" class="btn btn-primary">Create department</button>
+    </form>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

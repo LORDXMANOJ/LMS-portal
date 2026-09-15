@@ -1,0 +1,43 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <h1>Search</h1>
+    <form method="GET" action="/student/search" style="max-width:480px;margin-bottom:24px;">
+      <input type="text" name="q" placeholder="Search courses, materials, assignments" value="<%= q %>">
+    </form>
+
+    <% if (q) { %>
+      <div class="section-header"><h2>Courses</h2></div>
+      <% if (courses.length === 0) { %><div class="empty-state">No matching courses.</div><% } else { %>
+        <ul class="list-plain">
+          <% courses.forEach(c => { %>
+            <li><a href="/student/courses/<%= c.id %>"><%= c.code %>: <%= c.title %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <div class="section-header"><h2>Materials</h2></div>
+      <% if (materials.length === 0) { %><div class="empty-state">No matching materials.</div><% } else { %>
+        <ul class="list-plain">
+          <% materials.forEach(m => { %>
+            <li><span class="faint"><%= m.course_code %></span> &middot; <%= m.title %></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <div class="section-header"><h2>Assignments</h2></div>
+      <% if (assignments.length === 0) { %><div class="empty-state">No matching assignments.</div><% } else { %>
+        <ul class="list-plain">
+          <% assignments.forEach(a => { %>
+            <li><a href="/student/assignments/<%= a.id %>"><span class="faint"><%= a.course_code %></span> &middot; <%= a.title %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,116 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <h1><%= department.name %> (<%= department.code %>)</h1>
+    <p class="muted">Manage the faculty accounts in your department.</p>
+
+    <% if (resetPassword) { %>
+      <div class="error-msg" style="background:var(--ok-bg);color:var(--ok-text);border-color:var(--border-strong);">
+        New password for <%= resetEmail %>: <strong><%= resetPassword %></strong>
+        &mdash; shown once, hand it off now.
+      </div>
+    <% } %>
+
+    <div class="stats-row">
+      <div class="stat-block"><div class="stat-number"><%= faculty.length %></div><div class="stat-label">Active faculty</div></div>
+      <div class="stat-block"><div class="stat-number"><%= students.length %></div><div class="stat-label">Students</div></div>
+      <div class="stat-block"><div class="stat-number"><%= courseRings.length %></div><div class="stat-label">Courses</div></div>
+    </div>
+
+    <div class="section-header"><h2>Course performance</h2></div>
+    <% if (courseRings.length === 0) { %>
+      <div class="empty-state">No courses in this department yet.</div>
+    <% } else { %>
+      <div class="grid">
+        <% courseRings.forEach(c => { %>
+          <% const r = 44; const circumference = 2 * Math.PI * r; const filled = circumference * (c.completionPercent / 100); const remaining = circumference - filled; %>
+          <div class="card" style="display:flex;gap:16px;align-items:center;">
+            <svg viewBox="0 0 110 110" width="90" height="90" role="img" aria-label="<%= c.completionPercent %> percent of possible assignment submissions completed in <%= c.code %>">
+              <circle cx="55" cy="55" r="<%= r %>" fill="none" stroke="var(--border)" stroke-width="10"/>
+              <circle cx="55" cy="55" r="<%= r %>" fill="none" stroke="var(--accent)" stroke-width="10"
+                stroke-dasharray="<%= filled %> <%= remaining %>" stroke-linecap="round"
+                transform="rotate(-90 55 55)"/>
+              <text x="55" y="60" text-anchor="middle" font-size="20" font-weight="700" fill="var(--text)"><%= c.completionPercent %>%</text>
+            </svg>
+            <div>
+              <strong><%= c.code %></strong>
+              <div class="faint" style="font-size:0.82rem;"><%= c.title %></div>
+              <div class="faint" style="font-size:0.8rem;margin-top:4px;"><%= c.faculty_name %> &middot; <%= c.student_count %> students</div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <div class="section-header"><h2>Students (<%= students.length %>)</h2></div>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Joined</th></tr></thead>
+      <tbody>
+        <% students.forEach(s => { %>
+          <tr>
+            <td><%= s.name %></td>
+            <td class="faint"><%= s.email %></td>
+            <td class="faint"><%= s.created_at %></td>
+          </tr>
+        <% }) %>
+        <% if (students.length === 0) { %>
+          <tr><td colspan="3" class="faint">No students yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <div class="section-header">
+      <h2>Faculty</h2>
+      <a href="/hod/faculty/new" class="btn btn-primary btn-sm">New faculty</a>
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Joined</th><th></th></tr></thead>
+      <tbody>
+        <% faculty.forEach(f => { %>
+          <tr>
+            <td><%= f.name %></td>
+            <td class="faint"><%= f.email %></td>
+            <td class="faint"><%= f.created_at %></td>
+            <td>
+              <form method="POST" action="/hod/faculty/<%= f.id %>/reset-password" class="inline-form" onsubmit="return confirm('Reset this faculty password?');">
+                <button type="submit" class="link-btn">Reset password</button>
+              </form>
+              &middot;
+              <form method="POST" action="/hod/faculty/<%= f.id %>/archive" class="inline-form" onsubmit="return confirm('Archive this faculty account? Their courses and data stay intact, but they will be unable to log in.');">
+                <button type="submit" class="link-btn">Archive</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        <% if (faculty.length === 0) { %>
+          <tr><td colspan="4" class="faint">No faculty yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <% if (archivedFaculty.length > 0) { %>
+      <div class="section-header"><h2>Archived faculty</h2></div>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+        <tbody>
+          <% archivedFaculty.forEach(f => { %>
+            <tr>
+              <td><%= f.name %></td>
+              <td class="faint"><%= f.email %></td>
+              <td>
+                <form method="POST" action="/hod/faculty/<%= f.id %>/restore" class="inline-form">
+                  <button type="submit" class="link-btn">Restore</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

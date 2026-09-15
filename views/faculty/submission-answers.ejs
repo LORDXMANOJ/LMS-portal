@@ -1,0 +1,63 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/faculty/assignments/<%= assignment.id %>#submissions" class="faint">&larr; <%= assignment.title %></a>
+    <h1><%= student.name %>'s answers</h1>
+    <p class="faint"><%= student.email %> &middot; submitted <%= submission.submitted_at %>
+      <% if (submission.auto_score !== null && submission.auto_score !== undefined) { %> &middot; auto-graded MCQ score: <%= submission.auto_score %><% } %>
+    </p>
+
+    <% if (mcqQuestions.length > 0) { %>
+      <div class="section-header"><h2>Multiple choice</h2></div>
+      <% mcqQuestions.forEach((q, i) => { %>
+        <% const ans = answersByQuestion[q.id]; %>
+        <% const sel = selectedByQuestion[q.id] || new Set(); %>
+        <div class="card">
+          <span class="faint">Question <%= i + 1 %> &middot; <%= q.points %> pts</span>
+          <p style="margin:4px 0 8px 0;"><strong><%= q.question_text %></strong></p>
+          <ul class="list-plain" style="border-top:none;">
+            <% q.options.forEach(o => { %>
+              <li style="padding:4px 0;border-bottom:none;">
+                <%= o.option_text %>
+                <% if (o.is_correct) { %><span class="badge badge-submitted" style="margin-left:6px;">Correct answer</span><% } %>
+                <% if (sel.has(o.id)) { %><span class="badge <%= o.is_correct ? 'badge-submitted' : 'badge-overdue' %>" style="margin-left:6px;">Student chose</span><% } %>
+              </li>
+            <% }) %>
+          </ul>
+          <p class="faint" style="margin-top:8px;">
+            <%= ans ? (ans.is_correct ? 'Correct' : 'Incorrect') + ' — ' + ans.points_awarded + ' / ' + q.points + ' pts' : 'Not answered' %>
+          </p>
+        </div>
+      <% }) %>
+    <% } %>
+
+    <% if (programQuestions.length > 0) { %>
+      <div class="section-header"><h2>Programming</h2></div>
+      <% programQuestions.forEach((q, i) => { %>
+        <% const ans = answersByQuestion[q.id]; %>
+        <div class="card">
+          <span class="faint">Question <%= i + 1 %> &middot; <%= q.language %> &middot; <%= q.points %> pts</span>
+          <p style="margin:4px 0 8px 0;"><strong><%= q.question_text %></strong></p>
+          <% if (q.testCases.length > 0) { %>
+            <% q.testCases.forEach(tc => { %>
+              <div class="qp-test-case" style="background:var(--ok-bg);padding:8px 10px;border-radius:var(--radius);font-size:0.8rem;font-family:'SFMono-Regular',Consolas,monospace;margin-bottom:6px;">
+                <div><strong>Input:</strong> <%= tc.input %></div>
+                <div><strong>Expected:</strong> <%= tc.expected_output %></div>
+              </div>
+            <% }) %>
+          <% } %>
+          <% if (ans && ans.code_answer) { %>
+            <pre style="background:var(--accent-tint);padding:12px;border-radius:var(--radius);font-size:0.85rem;overflow-x:auto;"><%= ans.code_answer %></pre>
+          <% } else { %>
+            <p class="faint">Not answered.</p>
+          <% } %>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

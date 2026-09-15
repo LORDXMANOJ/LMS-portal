@@ -1,0 +1,41 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:680px;">
+    <a href="/student" class="faint">&larr; Dashboard</a>
+    <h1>Calendar</h1>
+    <p class="muted">All assignment due dates across your enrolled courses, earliest first.</p>
+
+    <% if (assignments.length === 0) { %>
+      <div class="empty-state">No assignments scheduled.</div>
+    <% } else { %>
+      <div class="timeline">
+        <% assignments.forEach(a => { %>
+          <% const isDone = !!a.submission_id; const urgency = urgencyClass(a.due_date, isDone); %>
+          <div class="timeline-item <%= urgency %>">
+            <div class="card-title-row">
+              <div>
+                <div class="due-date <%= urgency !== 'done' ? urgency : '' %>"><%= a.due_date %></div>
+                <a href="/student/assignments/<%= a.id %>"><strong><%= a.title %></strong></a>
+                <div class="faint"><%= a.course_code %></div>
+              </div>
+              <% if (isDone) { %>
+                <span class="badge badge-submitted">Submitted</span>
+              <% } else if (urgency === 'overdue') { %>
+                <span class="badge badge-overdue">Overdue</span>
+              <% } else if (urgency === 'due-soon') { %>
+                <span class="badge badge-due-soon">Due soon</span>
+              <% } else { %>
+                <span class="badge badge-pending">Pending</span>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

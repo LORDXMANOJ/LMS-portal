@@ -1,0 +1,20 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:480px;">
+    <a href="/admin" class="faint">&larr; Admin</a>
+    <h1>New admin</h1>
+    <p class="muted">Faculty, department head, and student accounts are created within the department hierarchy, not here.</p>
+    <% if (error) { %><div class="error-msg"><%= error %></div><% } %>
+    <form method="POST" action="/admin/admins">
+      <div class="field"><label for="name">Full name</label><input type="text" id="name" name="name" required></div>
+      <div class="field"><label for="email">Email</label><input type="email" id="email" name="email" required></div>
+      <div class="field"><label for="password">Temporary password</label><input type="password" id="password" name="password" required></div>
+      <button type="submit" class="btn btn-primary">Create admin</button>
+    </form>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

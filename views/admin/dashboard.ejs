@@ -1,0 +1,95 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <h1>Administration</h1>
+
+    <% if (resetPassword) { %>
+      <div class="error-msg" style="background:var(--ok-bg);color:var(--ok-text);border-color:var(--border-strong);">
+        New password for <%= resetEmail %>: <strong><%= resetPassword %></strong>
+        &mdash; shown once, hand it off now.
+      </div>
+    <% } %>
+
+    <div class="stats-row">
+      <div class="stat-block"><div class="stat-number"><%= stats.departments %></div><div class="stat-label">Departments</div></div>
+      <div class="stat-block"><div class="stat-number"><%= stats.faculty %></div><div class="stat-label">Faculty</div></div>
+      <div class="stat-block"><div class="stat-number"><%= stats.students %></div><div class="stat-label">Students</div></div>
+      <div class="stat-block"><div class="stat-number"><%= stats.submissions %></div><div class="stat-label">Submissions</div></div>
+    </div>
+
+    <div class="section-header">
+      <h2>Departments</h2>
+      <a href="/admin/departments/new" class="btn btn-primary btn-sm">New department</a>
+    </div>
+    <table>
+      <thead><tr><th>Code</th><th>Name</th><th>Department head</th><th>Faculty</th><th>Students</th><th></th></tr></thead>
+      <tbody>
+        <% departments.forEach(d => { %>
+          <tr>
+            <td><a href="/admin/departments/<%= d.id %>"><%= d.code %></a></td>
+            <td><a href="/admin/departments/<%= d.id %>"><%= d.name %></a></td>
+            <td class="faint"><%= d.hod_name %> &middot; <%= d.hod_email %></td>
+            <td><%= d.faculty_count %></td>
+            <td><%= d.student_count %></td>
+            <td>
+              <form method="POST" action="/admin/departments/<%= d.id %>/reset-hod-password" class="inline-form" onsubmit="return confirm('Reset this department head password?');">
+                <button type="submit" class="link-btn">Reset head password</button>
+              </form>
+              &middot;
+              <form method="POST" action="/admin/departments/<%= d.id %>/archive" class="inline-form" onsubmit="return confirm('Archive this department? Its head, faculty, and students will be unable to log in, but no data is deleted.');">
+                <button type="submit" class="link-btn">Archive</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        <% if (departments.length === 0) { %>
+          <tr><td colspan="6" class="faint">No departments yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <% if (archivedDepartments.length > 0) { %>
+      <div class="section-header"><h2>Archived departments</h2></div>
+      <table>
+        <thead><tr><th>Code</th><th>Name</th><th>Department head</th><th></th></tr></thead>
+        <tbody>
+          <% archivedDepartments.forEach(d => { %>
+            <tr>
+              <td><%= d.code %></td>
+              <td><%= d.name %></td>
+              <td class="faint"><%= d.hod_name %> &middot; <%= d.hod_email %></td>
+              <td>
+                <form method="POST" action="/admin/departments/<%= d.id %>/restore" class="inline-form">
+                  <button type="submit" class="link-btn">Restore</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <div class="section-header">
+      <h2>Admin accounts</h2>
+      <a href="/admin/admins/new" class="btn btn-sm">New admin</a>
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Joined</th></tr></thead>
+      <tbody>
+        <% admins.forEach(a => { %>
+          <tr>
+            <td><%= a.name %></td>
+            <td class="faint"><%= a.email %></td>
+            <td class="faint"><%= a.created_at %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <p class="faint">Faculty and student accounts are created by department heads and faculty within their own department, not by admin directly. Open a department to see its courses and overall performance.</p>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

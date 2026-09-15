@@ -1,0 +1,68 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <h1>Students</h1>
+    <p class="muted">Every student in your department. Any faculty member here can manage them, not just whoever created the account.</p>
+
+    <% if (resetPassword) { %>
+      <div class="error-msg" style="background:var(--ok-bg);color:var(--ok-text);border-color:var(--border-strong);">
+        New password for <%= resetEmail %>: <strong><%= resetPassword %></strong>
+        &mdash; shown once, hand it off now.
+      </div>
+    <% } %>
+
+    <div class="section-header">
+      <h2>Active (<%= students.length %>)</h2>
+      <a href="/faculty/students/new" class="btn btn-primary btn-sm">New student</a>
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Joined</th><th></th></tr></thead>
+      <tbody>
+        <% students.forEach(s => { %>
+          <tr>
+            <td><%= s.name %></td>
+            <td class="faint"><%= s.email %></td>
+            <td class="faint"><%= s.created_at %></td>
+            <td>
+              <form method="POST" action="/faculty/students/<%= s.id %>/reset-password" class="inline-form" onsubmit="return confirm('Reset this student password?');">
+                <button type="submit" class="link-btn">Reset password</button>
+              </form>
+              &middot;
+              <form method="POST" action="/faculty/students/<%= s.id %>/archive" class="inline-form" onsubmit="return confirm('Archive this student account?');">
+                <button type="submit" class="link-btn">Archive</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        <% if (students.length === 0) { %>
+          <tr><td colspan="4" class="faint">No students yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <% if (archivedStudents.length > 0) { %>
+      <div class="section-header"><h2>Archived (<%= archivedStudents.length %>)</h2></div>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th></th></tr></thead>
+        <tbody>
+          <% archivedStudents.forEach(s => { %>
+            <tr>
+              <td><%= s.name %></td>
+              <td class="faint"><%= s.email %></td>
+              <td>
+                <form method="POST" action="/faculty/students/<%= s.id %>/restore" class="inline-form">
+                  <button type="submit" class="link-btn">Restore</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

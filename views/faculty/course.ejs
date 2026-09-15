@@ -1,0 +1,194 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/faculty" class="faint">&larr; Your courses</a>
+    <div class="card-title-row">
+      <div>
+        <h1><%= course.code %>: <%= course.title %></h1>
+        <p class="muted"><%= course.description %></p>
+      </div>
+    </div>
+    <a href="/faculty/reports/<%= course.id %>" class="btn btn-sm">View report</a>
+    <a href="/faculty/courses/<%= course.id %>/edit" class="btn btn-sm">Edit course</a>
+    <a href="/faculty/courses/<%= course.id %>/daily" class="btn btn-sm">Daily questions</a>
+
+    <% if (typeof enrolled !== 'undefined' && enrolled) { %>
+      <div class="error-msg" style="background:var(--ok-bg);color:var(--ok-text);border-color:var(--ok-text);margin-top:16px;">
+        Enrolled <%= enrolled %> student(s).
+        <% if (typeof notFound !== 'undefined' && notFound) { %> Not found: <%= notFound %><% } %>
+      </div>
+    <% } %>
+
+    <div class="section-header"><h2>Students (<%= students.length %>)</h2></div>
+    <div class="card">
+      <% if (students.length === 0) { %>
+        <p class="faint">No students enrolled yet.</p>
+      <% } else { %>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Enrolled</th><th></th></tr></thead>
+          <tbody>
+            <% students.forEach(s => { %>
+              <tr>
+                <td><%= s.name %></td>
+                <td class="faint"><%= s.email %></td>
+                <td class="faint"><%= s.enrolled_at %></td>
+                <td>
+                  <a href="/faculty/courses/<%= course.id %>/daily/answers/<%= s.id %>" class="faint">Daily answers</a>
+                  &middot;
+                  <form method="POST" action="/faculty/courses/<%= course.id %>/unenroll/<%= s.id %>" class="inline-form">
+                    <button type="submit" class="link-btn">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+      <% if (availableStudents.length > 0) { %>
+        <form method="POST" action="/faculty/courses/<%= course.id %>/enroll" style="margin-top:16px;display:flex;gap:8px;align-items:flex-end;">
+          <div class="field" style="margin-bottom:0;flex:1;">
+            <label for="student_id">Enroll a student</label>
+            <select id="student_id" name="student_id" required>
+              <% availableStudents.forEach(s => { %>
+                <option value="<%= s.id %>"><%= s.name %> (<%= s.email %>)</option>
+              <% }) %>
+            </select>
+          </div>
+          <button type="submit" class="btn">Enroll</button>
+        </form>
+      <% } %>
+
+      <h3 style="margin-top:20px;">Bulk enroll by email</h3>
+      <p class="faint">Paste student emails, one per line or comma separated. Matching accounts will be enrolled.</p>
+      <form method="POST" action="/faculty/courses/<%= course.id %>/enroll-bulk">
+        <div class="field">
+          <textarea name="emails" placeholder="ben@lms.edu&#10;priya@lms.edu"></textarea>
+        </div>
+        <button type="submit" class="btn btn-sm">Bulk enroll</button>
+      </form>
+    </div>
+
+    <div class="section-header"><h2>Announcements</h2></div>
+    <div class="card">
+      <ul class="list-plain">
+        <% announcements.forEach(a => { %>
+          <li><div class="faint"><%= a.created_at %></div><strong><%= a.title %></strong><p style="margin:4px 0 0 0;"><%= a.body %></p></li>
+        <% }) %>
+        <% if (announcements.length === 0) { %><p class="faint">No announcements posted.</p><% } %>
+      </ul>
+      <form method="POST" action="/faculty/courses/<%= course.id %>/announcements" style="margin-top:16px;">
+        <div class="field"><label for="an-title">Title</label><input type="text" id="an-title" name="title" required></div>
+        <div class="field"><label for="an-body">Message</label><textarea id="an-body" name="body" required></textarea></div>
+        <button type="submit" class="btn">Post announcement</button>
+      </form>
+    </div>
+
+    <div class="section-header"><h2>Course content by week</h2></div>
+    <% if (videoError) { %>
+      <div class="error-msg">That doesn't look like a valid YouTube URL.</div>
+    <% } %>
+
+    <% weeks.forEach(w => { %>
+      <div class="card">
+        <h3><%= w.number === 0 ? 'General' : 'Week ' + w.number %></h3>
+
+        <% if (w.materials.length > 0) { %>
+          <ul class="list-plain">
+            <% w.materials.forEach(m => { %>
+              <li>
+                <div class="card-title-row">
+                  <div>
+                    <span class="faint" style="text-transform:uppercase;font-size:0.72rem;"><%= m.type %></span><br>
+                    <strong><%= m.title %></strong>
+                    <% if (m.type === 'video') { %>
+                      <div class="video-embed" style="margin-top:8px;max-width:400px;">
+                        <iframe src="<%= youtubeEmbedUrl(extractYoutubeId(m.content)) %>" title="<%= m.title %>" frameborder="0" allowfullscreen loading="lazy"></iframe>
+                      </div>
+                    <% } else if (m.content) { %>
+                      <p style="margin:4px 0 0 0;"><%= m.content %></p>
+                    <% } %>
+                    <% if (m.file_path) { %><p style="margin:4px 0 0 0;"><a href="<%= m.file_path %>" target="_blank">View file</a></p><% } %>
+                  </div>
+                  <form method="POST" action="/faculty/materials/<%= m.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this material?');">
+                    <button type="submit" class="link-btn">Delete</button>
+                  </form>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+        <% } %>
+
+        <% if (w.assignments.length > 0) { %>
+          <table style="margin-top:<%= w.materials.length > 0 ? '16px' : '0' %>;">
+            <thead><tr><th>Assignment</th><th>Due</th><th>Points</th><th>Submissions</th><th></th></tr></thead>
+            <tbody>
+              <% w.assignments.forEach(a => { %>
+                <tr>
+                  <td><a href="/faculty/assignments/<%= a.id %>"><%= a.title %></a></td>
+                  <td><%= a.due_date %></td>
+                  <td><%= a.max_points %></td>
+                  <td><%= a.submission_count %></td>
+                  <td>
+                    <a href="/faculty/assignments/<%= a.id %>/edit" class="faint">Edit</a>
+                    &middot;
+                    <form method="POST" action="/faculty/assignments/<%= a.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this assignment and all its submissions?');">
+                      <button type="submit" class="link-btn">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+
+        <% if (w.materials.length === 0 && w.assignments.length === 0) { %>
+          <p class="faint">Nothing here yet.</p>
+        <% } %>
+      </div>
+    <% }) %>
+    <% if (weeks.length === 0) { %>
+      <div class="empty-state">No materials or assignments yet.</div>
+    <% } %>
+
+    <div class="section-header"><h2>Add material</h2></div>
+    <div class="card">
+      <form method="POST" action="/faculty/courses/<%= course.id %>/materials" enctype="multipart/form-data">
+        <div class="field-row">
+          <div class="field"><label for="mat-title">Title</label><input type="text" id="mat-title" name="title" required></div>
+          <div class="field">
+            <label for="mat-type">Type</label>
+            <select id="mat-type" name="type">
+              <option value="note">Note</option>
+              <option value="link">Link</option>
+              <option value="video">Video (YouTube)</option>
+              <option value="file">File</option>
+            </select>
+          </div>
+          <div class="field"><label for="mat-week">Week</label><input type="number" id="mat-week" name="week_number" value="0" min="0"></div>
+        </div>
+        <div class="field"><label for="mat-content">Content, URL, or YouTube link</label><textarea id="mat-content" name="content" placeholder="For video: paste a YouTube URL, e.g. https://www.youtube.com/watch?v=..."></textarea></div>
+        <div class="field"><label for="mat-file">Attach a file (optional)</label><input type="file" id="mat-file" name="file"></div>
+        <button type="submit" class="btn">Add material</button>
+      </form>
+    </div>
+
+    <div class="section-header"><h2>Add assignment</h2></div>
+    <div class="card">
+      <form method="POST" action="/faculty/courses/<%= course.id %>/assignments">
+        <div class="field"><label for="as-title">Title</label><input type="text" id="as-title" name="title" required></div>
+        <div class="field"><label for="as-desc">Description</label><textarea id="as-desc" name="description"></textarea></div>
+        <div class="field-row">
+          <div class="field"><label for="as-due">Due date</label><input type="date" id="as-due" name="due_date" required></div>
+          <div class="field"><label for="as-points">Max points</label><input type="number" id="as-points" name="max_points" value="100"></div>
+          <div class="field"><label for="as-week">Week</label><input type="number" id="as-week" name="week_number" value="0" min="0"></div>
+        </div>
+        <button type="submit" class="btn">Create assignment</button>
+      </form>
+    </div>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

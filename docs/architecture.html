@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Coursework — architecture</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #f7f7f5; color: #1a1a18; max-width: 900px; margin: 40px auto; padding: 0 24px; }
+  @media (prefers-color-scheme: dark) { body { background: #17181a; color: #e8e8e4; } }
+  h1 { font-size: 1.4rem; }
+  figure { margin: 32px 0; }
+  figcaption { font-size: 0.85rem; color: #6b6b64; margin-top: 10px; }
+  svg { max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<h1>Coursework — request flow and data model</h1>
+
+<figure>
+<svg viewBox="0 0 860 420" role="img" aria-label="Request flow: browser sends a session-cookie request to Express; role middleware checks the session role and either blocks with 403 or forwards to a route handler; the handler runs an ownership-checked SQL query against SQLite and renders an EJS view back to the browser.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- Browser -->
+  <rect x="20" y="40" width="140" height="60" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="90" y="65" text-anchor="middle" font-size="13" fill="currentColor">Browser</text>
+  <text x="90" y="82" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.7">EJS HTML, forms</text>
+
+  <!-- arrow to Express -->
+  <line x1="160" y1="70" x2="230" y2="70" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="195" y="60" text-anchor="middle" font-size="11" fill="currentColor">request + session cookie</text>
+
+  <!-- Express app -->
+  <rect x="230" y="20" width="180" height="100" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="320" y="42" text-anchor="middle" font-size="13" fill="currentColor">Express app</text>
+  <text x="320" y="60" text-anchor="middle" font-size="11" fill="currentColor" opacity="0.7">src/app.js</text>
+
+  <!-- role middleware box inside -->
+  <rect x="245" y="70" width="150" height="35" rx="3" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="320" y="92" text-anchor="middle" font-size="11" fill="currentColor">requireRole() check</text>
+
+  <!-- arrow to decision -->
+  <line x1="320" y1="120" x2="320" y2="160" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="330" y="145" font-size="11" fill="currentColor">session.role in allowed?</text>
+
+  <!-- 403 branch -->
+  <line x1="320" y1="180" x2="170" y2="230" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="220" y="210" font-size="11" fill="currentColor">no</text>
+  <rect x="50" y="230" width="120" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="110" y="260" text-anchor="middle" font-size="12" fill="currentColor">403 error view</text>
+
+  <!-- ok branch to route handler -->
+  <line x1="320" y1="180" x2="320" y2="230" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="335" y="210" font-size="11" fill="currentColor">yes</text>
+  <rect x="250" y="230" width="150" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="325" y="250" text-anchor="middle" font-size="12" fill="currentColor">route handler</text>
+  <text x="325" y="266" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7">e.g. routes/faculty.js</text>
+
+  <!-- ownership check -->
+  <line x1="325" y1="280" x2="325" y2="310" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="335" y="298" font-size="10" fill="currentColor" opacity="0.85">ownCourseOr403()</text>
+
+  <!-- SQLite -->
+  <rect x="245" y="310" width="160" height="55" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="325" y="333" text-anchor="middle" font-size="12" fill="currentColor">SQLite</text>
+  <text x="325" y="350" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7">prepared statement, scoped by user id</text>
+
+  <!-- back up to EJS render -->
+  <line x1="405" y1="255" x2="480" y2="255" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="440" y="245" text-anchor="middle" font-size="11" fill="currentColor">rows</text>
+  <rect x="480" y="230" width="150" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="555" y="250" text-anchor="middle" font-size="12" fill="currentColor">EJS render</text>
+  <text x="555" y="266" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7">views/*.ejs</text>
+
+  <!-- back to browser -->
+  <path d="M 630 255 C 720 255, 720 70, 165 70" fill="none" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="700" y="160" font-size="11" fill="currentColor">HTML response</text>
+</svg>
+<figcaption>Every request carries a session cookie set at login. Route-level middleware blocks the wrong role outright (403) before a handler runs; handlers that manage a specific course additionally check row ownership (faculty_id, or an enrollments row) before touching the database, so a guessed URL cannot cross into another account's data.</figcaption>
+</figure>
+
+<figure>
+<svg viewBox="0 0 860 320" role="img" aria-label="Entity relationship diagram: users table connects to courses as faculty owner, to enrollments as student, to materials, assignments, submissions and announcements as author or actor. Courses connect to enrollments, materials, assignments and announcements. Assignments connect to submissions, and submissions reference the student.">
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- users -->
+  <rect x="20" y="130" width="120" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="80" y="160" text-anchor="middle" font-size="12" fill="currentColor">users</text>
+
+  <!-- courses -->
+  <rect x="220" y="40" width="120" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="280" y="70" text-anchor="middle" font-size="12" fill="currentColor">courses</text>
+
+  <!-- enrollments -->
+  <rect x="220" y="220" width="120" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="280" y="250" text-anchor="middle" font-size="12" fill="currentColor">enrollments</text>
+
+  <!-- materials -->
+  <rect x="420" y="20" width="120" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="480" y="47" text-anchor="middle" font-size="12" fill="currentColor">materials</text>
+
+  <!-- announcements -->
+  <rect x="420" y="80" width="120" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="480" y="107" text-anchor="middle" font-size="12" fill="currentColor">announcements</text>
+
+  <!-- assignments -->
+  <rect x="420" y="230" width="120" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="480" y="257" text-anchor="middle" font-size="12" fill="currentColor">assignments</text>
+
+  <!-- submissions -->
+  <rect x="640" y="230" width="120" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="700" y="257" text-anchor="middle" font-size="12" fill="currentColor">submissions</text>
+
+  <!-- edges -->
+  <line x1="140" y1="145" x2="220" y2="70" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <text x="165" y="100" font-size="10" fill="currentColor">owns (faculty_id)</text>
+
+  <line x1="140" y1="160" x2="220" y2="245" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <text x="150" y="215" font-size="10" fill="currentColor">enrolled as (student_id)</text>
+
+  <line x1="340" y1="60" x2="420" y2="45" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <line x1="340" y1="75" x2="420" y2="100" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <line x1="280" y1="90" x2="280" y2="220" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <text x="290" y="160" font-size="10" fill="currentColor">course_id</text>
+
+  <line x1="340" y1="250" x2="420" y2="252" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <text x="360" y="242" font-size="10" fill="currentColor">course_id</text>
+
+  <line x1="540" y1="252" x2="640" y2="252" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)"/>
+  <text x="565" y="242" font-size="10" fill="currentColor">assignment_id</text>
+
+  <path d="M 700 230 C 700 180, 140 180, 140 175" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrow2)"/>
+  <text x="400" y="175" text-anchor="middle" font-size="10" fill="currentColor">student_id (unique with assignment_id)</text>
+</svg>
+<figcaption>Six tables carry the domain. A course has exactly one faculty owner; enrollments is the many-to-many join between students and courses; materials, assignments, and announcements hang off a course; submissions hang off an assignment and are unique per (assignment, student), which is what makes "resubmit" an update rather than a duplicate row.</figcaption>
+</figure>
+
+<figure>
+<svg viewBox="0 0 860 300" role="img" aria-label="Role hierarchy: admin creates a department and its department head together; the department head creates faculty within that department; faculty create students within that department. Each tier's create-arrow is matched by an archive arrow that goes the same direction. Archiving a department cascades down to every account inside it, flipping status to archived without deleting any row.">
+  <defs>
+    <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <rect x="20" y="30" width="140" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="90" y="57" text-anchor="middle" font-size="12" fill="currentColor">admin</text>
+
+  <rect x="240" y="30" width="160" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="320" y="52" text-anchor="middle" font-size="12" fill="currentColor">department head</text>
+  <text x="320" y="66" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">one per department</text>
+
+  <rect x="480" y="30" width="140" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="550" y="57" text-anchor="middle" font-size="12" fill="currentColor">faculty</text>
+
+  <rect x="700" y="30" width="140" height="45" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="770" y="57" text-anchor="middle" font-size="12" fill="currentColor">student</text>
+
+  <line x1="160" y1="52" x2="240" y2="52" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow3)"/>
+  <text x="200" y="42" text-anchor="middle" font-size="9" fill="currentColor">creates</text>
+
+  <line x1="400" y1="52" x2="480" y2="52" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow3)"/>
+  <text x="440" y="42" text-anchor="middle" font-size="9" fill="currentColor">creates</text>
+
+  <line x1="620" y1="52" x2="700" y2="52" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow3)"/>
+  <text x="660" y="42" text-anchor="middle" font-size="9" fill="currentColor">creates</text>
+
+  <line x1="240" y1="85" x2="160" y2="85" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrow3)"/>
+  <text x="200" y="98" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.85">archives (cascades down)</text>
+
+  <line x1="480" y1="95" x2="400" y2="95" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrow3)"/>
+  <text x="440" y="108" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.85">archives (faculty only)</text>
+
+  <line x1="700" y1="85" x2="620" y2="85" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrow3)"/>
+  <text x="660" y="98" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.85">archives freely</text>
+
+  <rect x="20" y="160" width="820" height="110" rx="3" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="40" y="182" font-size="11" fill="currentColor" font-weight="bold">What "archive" actually does</text>
+  <text x="40" y="204" font-size="10" fill="currentColor">1. UPDATE users/departments SET status = 'archived' &mdash; the row is never deleted, every course/material/grade it created stays intact.</text>
+  <text x="40" y="222" font-size="10" fill="currentColor">2. Login checks status and refuses archived accounts with a clear message.</text>
+  <text x="40" y="240" font-size="10" fill="currentColor">3. A live session is not exempt: every request re-checks status in the database, so archiving someone mid-session</text>
+  <text x="40" y="256" font-size="10" fill="currentColor">   logs them out on their very next click, not just their next login. Restoring reverses all of this.</text>
+</svg>
+<figcaption>Each tier creates and can archive the tier directly below it, scoped to its own department. Archiving a department cascades to its head, its faculty, and its students in one transaction; nothing is ever hard-deleted, matching the "hide, don't delete" policy for department and account data.</figcaption>
+</figure>
+
+</body>
+</html>

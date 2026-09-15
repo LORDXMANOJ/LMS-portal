@@ -1,0 +1,37 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/faculty" class="faint">&larr; Dashboard</a>
+    <h1>All submissions</h1>
+    <p class="muted">Every submission across all courses you teach, most recent first.</p>
+
+    <% if (submissions.length === 0) { %>
+      <div class="empty-state">No submissions yet.</div>
+    <% } else { %>
+      <table>
+        <thead><tr><th>Student</th><th>Assignment</th><th>Course</th><th>Submitted</th><th>Status</th><th>Grade</th></tr></thead>
+        <tbody>
+          <% submissions.forEach(s => { %>
+            <tr>
+              <td><%= s.student_name %></td>
+              <td><a href="/faculty/assignments/<%= s.assignment_id %>"><%= s.assignment_title %></a></td>
+              <td class="faint"><%= s.course_code %></td>
+              <td class="faint"><%= s.submitted_at %></td>
+              <td>
+                <% if (s.status === 'graded') { %><span class="badge badge-graded">Graded</span>
+                <% } else if (s.status === 'late') { %><span class="badge badge-late">Late</span>
+                <% } else { %><span class="badge badge-submitted">Submitted</span><% } %>
+              </td>
+              <td><%= s.grade !== null && s.grade !== undefined ? s.grade + ' / ' + s.max_points : '-' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

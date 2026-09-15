@@ -1,0 +1,75 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container">
+    <a href="/admin" class="faint">&larr; Admin</a>
+    <h1><%= department.name %> (<%= department.code %>)</h1>
+    <p class="faint">Department head: <%= department.hod_name %> &middot; <%= department.hod_email %></p>
+
+    <div class="stats-row">
+      <div class="stat-block"><div class="stat-number"><%= facultyCount %></div><div class="stat-label">Faculty</div></div>
+      <div class="stat-block"><div class="stat-number"><%= studentCount %></div><div class="stat-label">Students</div></div>
+      <div class="stat-block"><div class="stat-number"><%= courses.length %></div><div class="stat-label">Courses</div></div>
+    </div>
+
+    <div class="section-header"><h2>Overall performance</h2></div>
+    <div class="card" style="display:flex;gap:32px;align-items:center;flex-wrap:wrap;">
+      <%
+        const r = 60;
+        const circumference = 2 * Math.PI * r;
+        const filled = circumference * (completionPercent / 100);
+        const remaining = circumference - filled;
+      %>
+      <figure style="margin:0;">
+        <svg viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="<%= completionPercent %> percent of possible assignment submissions completed across the department">
+          <circle cx="80" cy="80" r="<%= r %>" fill="none" stroke="var(--border)" stroke-width="14"/>
+          <circle cx="80" cy="80" r="<%= r %>" fill="none" stroke="var(--accent)" stroke-width="14"
+            stroke-dasharray="<%= filled %> <%= remaining %>" stroke-linecap="round"
+            transform="rotate(-90 80 80)"/>
+          <text x="80" y="76" text-anchor="middle" font-size="28" font-weight="700" fill="var(--text)"><%= completionPercent %>%</text>
+          <text x="80" y="96" text-anchor="middle" font-size="10" fill="var(--text-muted)">completed</text>
+        </svg>
+        <figcaption class="faint" style="text-align:center;margin-top:6px;">Assignment submissions vs. possible</figcaption>
+      </figure>
+
+      <div>
+        <div class="stat-number"><%= avgGrade !== null ? avgGrade : '—' %></div>
+        <div class="stat-label">Average grade across all graded submissions</div>
+        <p class="faint" style="margin-top:10px;"><%= totalSubmissions %> total submissions recorded across every course in this department.</p>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2>Courses</h2>
+      <a href="/admin/courses/new?dept=<%= department.id %>" class="btn btn-primary btn-sm">New course</a>
+    </div>
+    <table>
+      <thead><tr><th>Code</th><th>Title</th><th>Faculty</th><th>Students</th><th>Assignments</th><th></th></tr></thead>
+      <tbody>
+        <% courses.forEach(c => { %>
+          <tr>
+            <td><%= c.code %></td>
+            <td><%= c.title %></td>
+            <td class="faint"><%= c.faculty_name %></td>
+            <td><%= c.student_count %></td>
+            <td><%= c.assignment_count %></td>
+            <td>
+              <a href="/admin/courses/<%= c.id %>/edit" class="faint">Edit</a>
+              &middot;
+              <form method="POST" action="/admin/courses/<%= c.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this course and all its data?');">
+                <button type="submit" class="link-btn">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+        <% if (courses.length === 0) { %>
+          <tr><td colspan="6" class="faint">No courses in this department yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>

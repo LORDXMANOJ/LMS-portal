@@ -1,0 +1,28 @@
+<%
+  const p = typeof currentPath !== 'undefined' ? currentPath : '';
+%>
+<nav class="sidebar">
+  <div class="sidebar-label">Workspace</div>
+  <div class="sidebar-links">
+    <% if (user.role === 'student') { %>
+      <% const isDashboard = p === '/student' || p.startsWith('/student/courses') || p.startsWith('/student/assignments'); %>
+      <a href="/student" class="<%= isDashboard ? 'active' : '' %>">Dashboard</a>
+      <a href="/student/calendar" class="<%= p.startsWith('/student/calendar') ? 'active' : '' %>">Calendar</a>
+      <a href="/student/daily" class="<%= p.startsWith('/student/daily') ? 'active' : '' %>">Daily questions</a>
+      <a href="/student/search" class="<%= p.startsWith('/student/search') ? 'active' : '' %>">Search</a>
+      <a href="/student/profile" class="<%= p.startsWith('/student/profile') ? 'active' : '' %>">Profile</a>
+    <% } else if (user.role === 'faculty') { %>
+      <%
+        const isDashboard = p === '/faculty' || p.startsWith('/faculty/courses') || p.startsWith('/faculty/assignments')
+          || p.startsWith('/faculty/questions') || p.startsWith('/faculty/daily') || p.startsWith('/faculty/reports');
+      %>
+      <a href="/faculty" class="<%= isDashboard ? 'active' : '' %>">Dashboard</a>
+      <a href="/faculty/students" class="<%= p.startsWith('/faculty/students') ? 'active' : '' %>">Students</a>
+      <a href="/faculty/submissions" class="<%= p.startsWith('/faculty/submissions') ? 'active' : '' %>">Submissions</a>
+    <% } else if (user.role === 'hod') { %>
+      <a href="/hod" class="active">Department</a>
+    <% } else if (user.role === 'admin') { %>
+      <a href="/admin" class="active">Admin</a>
+    <% } %>
+  </div>
+</nav>

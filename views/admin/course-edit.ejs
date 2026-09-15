@@ -1,0 +1,37 @@
+<%- include('../partials/head') %>
+<%- include('../partials/nav') %>
+<%- include('../partials/sidebar') %>
+<div class="with-sidebar">
+<main class="page">
+  <div class="container" style="max-width:520px;">
+    <a href="<%= deptId ? '/admin/departments/' + deptId : '/admin' %>" class="faint">&larr; Back</a>
+    <h1>Edit course</h1>
+    <% if (error) { %><div class="error-msg"><%= error %></div><% } %>
+    <form method="POST" action="/admin/courses/<%= course.id %>/edit">
+      <div class="field">
+        <label>Course code</label>
+        <input type="text" value="<%= course.code %>" disabled>
+      </div>
+      <div class="field">
+        <label for="faculty_id">Faculty</label>
+        <select id="faculty_id" name="faculty_id">
+          <option value="">Unassigned</option>
+          <% facultyList.forEach(f => { %>
+            <option value="<%= f.id %>" <%= course.faculty_id === f.id ? 'selected' : '' %>><%= f.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" value="<%= course.title %>" required>
+      </div>
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description"><%= course.description || '' %></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Save changes</button>
+    </form>
+  </div>
+</main>
+</div>
+<%- include('../partials/footer') %>
