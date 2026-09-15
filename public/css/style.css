@@ -438,6 +438,28 @@ tr:last-child td { border-bottom: none; }
 .due-date.due-soon { color: var(--warn-text); font-weight: 600; }
 
 /* Activity list */
+.notif-feed {
+  list-style: none;
+  margin: 0 0 24px 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.notif-feed li {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.notif-feed li:last-child { border-bottom: none; }
+.notif-feed li.unread { background: var(--accent-tint); }
+.notif-feed li .faint { flex-shrink: 0; font-size: 0.76rem; }
+
 .activity-item {
   display: flex;
   gap: 10px;

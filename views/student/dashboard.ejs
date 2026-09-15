@@ -39,6 +39,23 @@
       </div>
     <% } %>
 
+    <% if (notifRecent.length > 0) { %>
+      <div class="section-header">
+        <h2>What's happening</h2>
+        <% if (notifUnreadCount > 0) { %>
+          <form method="POST" action="/student/notifications/read-all"><button type="submit" class="link-btn">Mark all as read</button></form>
+        <% } %>
+      </div>
+      <ul class="notif-feed">
+        <% notifRecent.slice(0, 5).forEach(n => { %>
+          <li class="<%= n.read_at ? '' : 'unread' %>">
+            <%= n.message %>
+            <span class="faint"><%= n.created_at %></span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+
     <div class="section-header">
       <h2>Pending work</h2>
       <a href="/student/calendar" class="faint">View calendar &rarr;</a>
