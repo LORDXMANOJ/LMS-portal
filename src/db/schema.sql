@@ -208,13 +208,17 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 
 -- Peer-activity notifications: real events only (a classmate submitted
--- something, hit a streak milestone, or overtook you on a leaderboard).
--- message is pre-rendered text chosen from a rotating set of honestly
--- worded phrasings for the same real event - nothing here is fabricated.
+-- something, hit a streak milestone, or overtook you on a leaderboard) and
+-- only sent to a student who is actually behind on that specific thing -
+-- never to someone who already did it themselves. message is pre-rendered
+-- text chosen from a rotating set of honestly worded phrasings for the same
+-- real event - nothing here is fabricated. link_url is where clicking the
+-- notification takes the student (the exact assignment/daily question).
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   message TEXT NOT NULL,
+  link_url TEXT,
   course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE,
   read_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

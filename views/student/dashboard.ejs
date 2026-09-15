@@ -49,8 +49,10 @@
       <ul class="notif-feed">
         <% notifRecent.slice(0, 5).forEach(n => { %>
           <li class="<%= n.read_at ? '' : 'unread' %>">
-            <%= n.message %>
-            <span class="faint"><%= n.created_at %></span>
+            <a href="/student/notifications/<%= n.id %>/go">
+              <span><%= n.message %></span>
+              <span class="faint"><%= n.created_at %></span>
+            </a>
           </li>
         <% }) %>
       </ul>

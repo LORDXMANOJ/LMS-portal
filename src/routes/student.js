@@ -16,6 +16,7 @@ const {
   unreadCount,
   recentNotifications,
   markAllRead,
+  markRead,
 } = require('../db/notifications');
 
 const router = express.Router();
@@ -386,7 +387,7 @@ router.post('/assignments/:id/answer', (req, res) => {
   if (isFirstSubmission) {
     const actor = db.prepare('SELECT name FROM users WHERE id = ?').get(studentId);
     const course = db.prepare('SELECT code FROM courses WHERE id = ?').get(assignment.course_id);
-    notifyAssignmentSubmitted(assignment.course_id, studentId, actor.name, assignment.title, course.code);
+    notifyAssignmentSubmitted(assignment.id, assignment.course_id, studentId, actor.name, assignment.title, course.code);
   }
 
   res.redirect('/student/assignments/' + assignmentId);
@@ -431,7 +432,7 @@ router.post('/assignments/:id/submit', upload.single('file'), (req, res) => {
 
     const actor = db.prepare('SELECT name FROM users WHERE id = ?').get(studentId);
     const course = db.prepare('SELECT code FROM courses WHERE id = ?').get(assignment.course_id);
-    notifyAssignmentSubmitted(assignment.course_id, studentId, actor.name, assignment.title, course.code);
+    notifyAssignmentSubmitted(assignment.id, assignment.course_id, studentId, actor.name, assignment.title, course.code);
   }
 
   res.redirect('/student/assignments/' + assignmentId);
@@ -480,23 +481,33 @@ router.get('/search', (req, res) => {
 // Daily practice questions: everything scheduled today or earlier, across
 // all enrolled courses. Shown one at a time, ?i= selects which one, oldest
 // released first so working through them in order makes sense.
-router.get('/daily', (req, res) => {
-  const studentId = req.session.user.id;
+function releasedDailyQuestions(studentId) {
   const courses = db.prepare('SELECT course_id FROM enrollments WHERE student_id = ?').all(studentId);
   const courseIds = courses.map((c) => c.course_id);
+  if (courseIds.length === 0) return [];
+  const placeholders = courseIds.map(() => '?').join(',');
+  return db
+    .prepare(
+      `SELECT dq.*, c.code as course_code
+       FROM daily_questions dq JOIN courses c ON c.id = dq.course_id
+       WHERE dq.course_id IN (${placeholders}) AND dq.scheduled_date <= date('now')
+       ORDER BY dq.scheduled_date ASC, dq.position ASC, dq.id ASC`
+    )
+    .all(...courseIds);
+}
 
-  let questions = [];
-  if (courseIds.length > 0) {
-    const placeholders = courseIds.map(() => '?').join(',');
-    questions = db
-      .prepare(
-        `SELECT dq.*, c.code as course_code
-         FROM daily_questions dq JOIN courses c ON c.id = dq.course_id
-         WHERE dq.course_id IN (${placeholders}) AND dq.scheduled_date <= date('now')
-         ORDER BY dq.scheduled_date ASC, dq.position ASC, dq.id ASC`
-      )
-      .all(...courseIds);
-  }
+// Notification links point here with a stable daily_question id; this finds
+// that question's position in the student's own released list and hands off
+// to the index-based /daily page.
+router.get('/daily/go/:id', (req, res) => {
+  const questions = releasedDailyQuestions(req.session.user.id);
+  const index = questions.findIndex((q) => q.id === Number(req.params.id));
+  res.redirect('/student/daily' + (index >= 0 ? '?i=' + index : ''));
+});
+
+router.get('/daily', (req, res) => {
+  const studentId = req.session.user.id;
+  const questions = releasedDailyQuestions(studentId);
 
   if (questions.length === 0) {
     return res.render('student/daily', { title: 'Daily questions', question: null, questions: [] });
@@ -602,11 +613,11 @@ router.post('/daily/:id/answer', (req, res) => {
   if (isFirstAnswer) {
     const actor = db.prepare('SELECT name FROM users WHERE id = ?').get(studentId);
     const course = db.prepare('SELECT code FROM courses WHERE id = ?').get(question.course_id);
-    notifyDailyAnswered(question.course_id, studentId, actor.name, course.code);
+    notifyDailyAnswered(question.id, question.course_id, studentId, actor.name, course.code);
 
     const newStreak = getStreak(studentId);
     if (newStreak.current > 0 && newStreak.current % 5 === 0) {
-      notifyStreakMilestone(studentId, actor.name, newStreak.current);
+      notifyStreakMilestone(studentId, actor.name, newStreak.current, getStreak);
     }
 
     const ranksAfter = getLeaderboardRanks(question.course_id).ranks;
@@ -646,6 +657,17 @@ router.get('/profile', (req, res) => {
 router.post('/notifications/read-all', (req, res) => {
   markAllRead(req.session.user.id);
   res.redirect(req.get('Referer') || '/student');
+});
+
+// Clicking a single notification (in the bell dropdown or the dashboard
+// feed) marks just that one as read and takes the student straight to the
+// assignment/daily question it's about.
+router.get('/notifications/:id/go', (req, res) => {
+  const studentId = req.session.user.id;
+  const notification = db.prepare('SELECT * FROM notifications WHERE id = ? AND student_id = ?').get(req.params.id, studentId);
+  if (!notification) return res.redirect('/student');
+  markRead(notification.id, studentId);
+  res.redirect(notification.link_url || '/student');
 });
 
 module.exports = router;

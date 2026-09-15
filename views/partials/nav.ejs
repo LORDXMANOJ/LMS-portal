@@ -17,8 +17,10 @@
                 <ul class="notif-list">
                   <% notifRecent.forEach(n => { %>
                     <li class="<%= n.read_at ? '' : 'unread' %>">
-                      <%= n.message %>
-                      <div class="faint"><%= n.created_at %></div>
+                      <a href="/student/notifications/<%= n.id %>/go">
+                        <%= n.message %>
+                        <div class="faint"><%= n.created_at %></div>
+                      </a>
                     </li>
                   <% }) %>
                 </ul>

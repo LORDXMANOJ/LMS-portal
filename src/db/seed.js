@@ -460,7 +460,7 @@ function seed() {
       { text: '"undefined"', correct: false },
     ]
   );
-  insertDailyQuestion.run(
+  const dq2 = insertDailyQuestion.run(
     cs101.lastInsertRowid, 'program', 0,
     'Write a function called isPalindrome(str) that returns true if the string reads the same forwards and backwards.',
     5, 'javascript',
@@ -498,6 +498,39 @@ function seed() {
   insertActivity.run(aisha.lastInsertRowid, cs101.lastInsertRowid, 'submitted', 'Submitted Assignment 1: Basic Syntax Exercises', '-9 days');
   insertActivity.run(aisha.lastInsertRowid, cs101.lastInsertRowid, 'graded', 'Received a grade for Assignment 1: Basic Syntax Exercises', '-7 days');
   insertActivity.run(aisha.lastInsertRowid, math201.lastInsertRowid, 'submitted', 'Submitted Problem Set 1: Vector Spaces', '-4 days');
+
+  // Ben answers today's CS101 daily question, and Diego submits Assignment 2
+  // (Control Flow) - both real events where Aisha herself has NOT done the
+  // same thing yet, so notifying her about them is honest under the
+  // "only tell them if they're actually behind" rule.
+  db.prepare(
+    `INSERT INTO daily_answers (daily_question_id, student_id, code_answer, answered_at)
+     VALUES (?, ?, ?, datetime('now'))`
+  ).run(dq2.lastInsertRowid, ben.lastInsertRowid, 'function isPalindrome(str) {\n  return str === str.split("").reverse().join("");\n}\n');
+
+  db.prepare(
+    `INSERT INTO submissions (assignment_id, student_id, content, status, submitted_at)
+     VALUES (?, ?, ?, 'submitted', datetime('now', '-1 hours'))`
+  ).run(a2.lastInsertRowid, diego.lastInsertRowid, 'Three programs attached covering loops and conditionals.');
+
+  const insertNotification = db.prepare(
+    `INSERT INTO notifications (student_id, message, link_url, course_id, created_at)
+     VALUES (?, ?, ?, ?, datetime('now', ?))`
+  );
+  insertNotification.run(
+    aisha.lastInsertRowid,
+    'Ben Torres already finished today\'s CS101 question. You haven\'t.',
+    '/student/daily/go/' + dq2.lastInsertRowid,
+    cs101.lastInsertRowid,
+    '-2 hours'
+  );
+  insertNotification.run(
+    aisha.lastInsertRowid,
+    'Diego Alvarez already submitted Assignment 2: Control Flow in CS101. You haven\'t.',
+    '/student/assignments/' + a2.lastInsertRowid,
+    cs101.lastInsertRowid,
+    '-1 hours'
+  );
 
   console.log('Seed complete.');
   console.log('Login credentials:');
